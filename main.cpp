@@ -2,9 +2,9 @@
 
 #include "window.h"
 
-int main()
+int main(int argc, const char* argv[])
 {
     auto app = Gtk::Application::create(PROJECT_NAME);
-    Window window;
+    Window window{ argv[0] };
     return app->run(window);
 }

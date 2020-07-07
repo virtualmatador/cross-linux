@@ -25,6 +25,10 @@ pkg_check_modules(GTKMM gtkmm-3.0)
 link_directories(${GTKMM_LIBRARY_DIRS})
 include_directories(${GTKMM_INCLUDE_DIRS})
 
+pkg_check_modules(WEBKIT2GTK webkit2gtk-4.0)
+link_directories(${WEBKIT2GTK_LIBRARY_DIRS})
+include_directories(${WEBKIT2GTK_INCLUDE_DIRS})
+
 add_compile_definitions(PROJECT_NAME="${CMAKE_PROJECT_NAME}")
 add_executable("${CMAKE_PROJECT_NAME}" "main.cpp" "window.cpp")
 file(GLOB core_sources "../core/src/*.cpp")
@@ -32,5 +36,6 @@ target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${core_sources})
 file(GLOB main_sources "../../src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${main_sources})
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
-target_link_libraries("${CMAKE_PROJECT_NAME}" ${GTKMM_LIBRARIES} pthread)
+target_link_libraries("${CMAKE_PROJECT_NAME}"
+    ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} pthread)
 install(TARGETS "${CMAKE_PROJECT_NAME}" DESTINATION "bin")

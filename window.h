@@ -46,10 +46,12 @@ private:
     void on_load_image_view();
 
 private:
+    void load_view(const __int32_t sender, const __int32_t view_info, const char* waves);
     void load_web_view(const __int32_t sender, const __int32_t view_info,
         const char* html, const char* waves);
     void load_image_view(const __int32_t sender, const __int32_t view_info,
         const __int32_t image_width, const char* waves);
+    bool handle_key(GdkEventKey *event);
 
 private:
     std::string path_;
@@ -57,6 +59,7 @@ private:
     Gtk::Widget* web_view_widget_;
 
 public:
+    __int32_t sender_;
     std::mutex dispatch_lock_;
     Glib::Dispatcher need_restart_;
     Glib::Dispatcher post_message_;

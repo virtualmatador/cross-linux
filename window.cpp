@@ -1,4 +1,5 @@
 #include <fstream>
+#include <sstream>
 
 #include "../core/src/bridge.h"
 #include "../core/src/interface.h"
@@ -7,27 +8,67 @@
 
 Window* window_;
 
+void web_view_script_message_received(WebKitUserContentManager* manager, WebKitJavascriptResult* js_result, gpointer user_data)
+{
+    auto value = webkit_javascript_result_get_js_value(js_result);
+    std::istringstream is{ std::string(jsc_value_to_string(value)) };
+    __int32_t sender;
+    std::string id, command, info;
+    is >> sender;
+    is >> id;
+    is >> command;
+    std::getline(is, info);
+    interface::HandleAsync(sender, id.c_str(), command.c_str(), info.c_str());
+    webkit_javascript_result_unref(js_result);
+}
+
+void web_view_run_javascript_finished(GObject* sourceObject, GAsyncResult* res, gpointer userData)
+{
+}
+
+void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event, gpointer user_data)
+{
+    if (load_event == WEBKIT_LOAD_FINISHED && user_data == reinterpret_cast<void*>(window_->sender_))
+    {
+        std::ostringstream os;
+        os <<
+            "var Handler = window.webkit.messageHandlers.Handler_;"
+            "var Handler_Receiver = "
+            << window_->sender_ << ";"
+            "function CallHandler(id, command, info)"
+            "{"
+            "    Handler.postMessage(Handler_Receiver.toString() + \" \" + id + \" \" + command + \" \" + info);"
+            "}";
+        webkit_web_view_run_javascript(web_view, os.str().c_str(), nullptr, web_view_run_javascript_finished, nullptr);
+    }
+}
+
+bool Window::handle_key(GdkEventKey *event)
+{
+    if (event->keyval == GDK_KEY_Escape)
+    {
+        interface::Escape();
+        return false;
+    }
+    return true;
+};
+
 Window::Window(std::string path)
     : path_{ "file://" + std::filesystem::path(path).parent_path().string() + "/assets/" }
+    , sender_{ 0 }
 {
     window_ = this;
+    add_events(Gdk::KEY_PRESS_MASK);
+    signal_key_release_event().connect(sigc::mem_fun(*this, &Window::handle_key));
     need_restart_.connect(sigc::mem_fun(*this, &Window::on_need_restart));
     post_message_.connect(sigc::mem_fun(*this, &Window::on_post_message));
     load_web_view_.connect(sigc::mem_fun(*this, &Window::on_load_web_view));
     load_image_view_.connect(sigc::mem_fun(*this, &Window::on_load_image_view));
-    add_events(Gdk::KEY_PRESS_MASK);
-    signal_key_release_event().connect([](GdkEventKey *event)
-    {
-        if (event->keyval == GDK_KEY_Escape)
-        {
-            interface::Escape();
-            return false;
-        }
-        return true;
-    });
     web_view_ = (WebKitWebView*)webkit_web_view_new();
+    WebKitUserContentManager *manager = webkit_web_view_get_user_content_manager(web_view_);
+    g_signal_connect(manager, "script-message-received::Handler_", G_CALLBACK(web_view_script_message_received), nullptr);
+    webkit_user_content_manager_register_script_message_handler (manager, "Handler_");
     web_view_widget_ = Glib::wrap((GtkWidget*)web_view_);
-    web_view_widget_->show();
     add(*web_view_widget_);
     interface::Begin();
     interface::Create();
@@ -75,9 +116,35 @@ void Window::on_need_restart()
     interface::Restart();
 }
 
+void Window::load_view(const __int32_t sender, const __int32_t view_info, const char* waves)
+{
+    sender_ = sender;
+    // LoadAudio(waves, new Runnable()
+    // {
+    //     public void run()
+    //     {
+    //         HandleAsync(sender, "body", "ready", "");
+    //     }
+    // });
+}
+
 void Window::load_web_view(const __int32_t sender, const __int32_t view_info,
     const char* html, const char* waves)
 {
+    load_view(sender, view_info, waves);
+    //pixels_ = null;
+    //image_view_.setVisibility(View.GONE);
+    //LoadView(web_view_, view_info, sender);
+    web_view_widget_->show();
+
+    // @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
+    // {
+    //     Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
+    //     view.getContext().startActivity(intent);
+    //     return true;
+    // }
+
+    g_signal_connect(web_view_, "load-changed", GCallback(web_view_load_changed), reinterpret_cast<void*>(sender));
     auto path = path_ + "html/" + html + ".htm";
     webkit_web_view_load_uri(web_view_, path.c_str());
 }
@@ -85,7 +152,7 @@ void Window::load_web_view(const __int32_t sender, const __int32_t view_info,
 void Window::load_image_view(const __int32_t sender, const __int32_t view_info,
     const __int32_t image_width, const char* waves)
 {
-
+    load_view(sender, view_info, waves);
 }
 
 void bridge::NeedRestart()

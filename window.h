@@ -38,6 +38,8 @@ class Window: public Gtk::Window
 public:
     Window(std::string path);
     ~Window();
+    __uint32_t* get_pixels();
+    void refresh_image_view();
 
 private:
     void on_need_restart();
@@ -57,6 +59,8 @@ private:
     std::string path_;
     WebKitWebView* web_view_;
     Gtk::Widget* web_view_widget_;
+    Glib::RefPtr<Gdk::Pixbuf> pixels_;
+    Gtk::DrawingArea image_view_widget_;
 
 public:
     __int32_t sender_;

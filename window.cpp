@@ -55,6 +55,7 @@ bool Window::handle_key(GdkEventKey *event)
 
 Window::Window(std::string path)
     : path_{ "file://" + std::filesystem::path(path).parent_path().string() + "/assets/" }
+    , pixels_{ nullptr }
     , sender_{ 0 }
 {
     window_ = this;
@@ -69,7 +70,14 @@ Window::Window(std::string path)
     g_signal_connect(manager, "script-message-received::Handler_", G_CALLBACK(web_view_script_message_received), nullptr);
     webkit_user_content_manager_register_script_message_handler (manager, "Handler_");
     web_view_widget_ = Glib::wrap((GtkWidget*)web_view_);
-    add(*web_view_widget_);
+    web_view_widget_->show();
+    image_view_widget_.signal_draw().connect([this](const Cairo::RefPtr<Cairo::Context>& cr)
+    {
+        Gdk::Cairo::set_source_pixbuf(cr, pixels_);
+        cr->paint();
+        return true;
+    });
+    image_view_widget_.show();
     interface::Begin();
     interface::Create();
     interface::Start();
@@ -77,9 +85,20 @@ Window::Window(std::string path)
 
 Window::~Window()
 {
+    Glib::unwrap(web_view_widget_);
     interface::Stop();
     interface::Destroy();
     interface::End();
+}
+
+__uint32_t* Window::get_pixels()
+{
+    return (__uint32_t*) pixels_->get_pixels();
+}
+
+void Window::refresh_image_view()
+{
+    image_view_widget_.queue_draw();
 }
 
 void Window::on_post_message()
@@ -106,7 +125,7 @@ void Window::on_load_image_view()
 {
     dispatch_lock_.lock();
     auto dispatch_info = load_image_view_queue_.front();
-    load_web_view_queue_.pop();
+    load_image_view_queue_.pop();
     dispatch_lock_.unlock();
     load_image_view(dispatch_info.sender, dispatch_info.view_info, dispatch_info.image_width, dispatch_info.waves);
 }
@@ -119,39 +138,56 @@ void Window::on_need_restart()
 void Window::load_view(const __int32_t sender, const __int32_t view_info, const char* waves)
 {
     sender_ = sender;
-    // LoadAudio(waves, new Runnable()
-    // {
-    //     public void run()
-    //     {
-    //         HandleAsync(sender, "body", "ready", "");
-    //     }
-    // });
 }
 
 void Window::load_web_view(const __int32_t sender, const __int32_t view_info,
     const char* html, const char* waves)
 {
-    load_view(sender, view_info, waves);
+    remove();
+    add(*web_view_widget_);
     //pixels_ = null;
-    //image_view_.setVisibility(View.GONE);
-    //LoadView(web_view_, view_info, sender);
-    web_view_widget_->show();
-
     // @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
     // {
     //     Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
     //     view.getContext().startActivity(intent);
     //     return true;
     // }
-
     g_signal_connect(web_view_, "load-changed", GCallback(web_view_load_changed), reinterpret_cast<void*>(sender));
     auto path = path_ + "html/" + html + ".htm";
     webkit_web_view_load_uri(web_view_, path.c_str());
+    // LoadAudio(waves, new Runnable()
+    // {
+    //     public void run()
+    //     {
+               interface::HandleAsync(sender, "body", "ready", "");
+    //     }
+    // });
+    load_view(sender, view_info, waves);
 }
 
 void Window::load_image_view(const __int32_t sender, const __int32_t view_info,
     const __int32_t image_width, const char* waves)
 {
+    remove();
+    add(image_view_widget_);
+    float scale = (float)image_width / (float)image_view_widget_.get_allocation().get_width();
+    __int32_t image_height = (__int32_t)(image_view_widget_.get_allocation().get_height() * scale);
+    scale = 1;
+    guint8* rgb_data = new guint8[4 * image_width * image_height];
+    pixels_ = Gdk::Pixbuf::create_from_data(rgb_data, Gdk::Colorspace::COLORSPACE_RGB, true, 8, image_width, image_height, 4 * image_width,
+    [rgb_data](const guint8*)
+    {
+        delete[] rgb_data;
+    });
+    std::ostringstream info;
+    info << (int)(196 * scale) << " " << image_width << " " << image_height << " " << 0x02010003;
+    //LoadAudio(waves, new Runnable()
+    // {
+    //     public void run()
+    //     {
+                interface::HandleAsync(sender, "body", "ready", info.str().c_str());
+    //     }
+    // });
     load_view(sender, view_info, waves);
 }
 
@@ -180,18 +216,16 @@ void bridge::LoadImageView(const __int32_t sender, const __int32_t view_info,
 
 __uint32_t* bridge::GetPixels()
 {
-    //return window_->pixels_;
-    return nullptr;
+    return window_->get_pixels();
 }
 
 void bridge::ReleasePixels(__uint32_t* const pixels)
 {
-    //window_->pixels_.clear();
 }
 
 void bridge::RefreshImageView()
 {
-    //window_->refresh_image_view_();
+    window_->refresh_image_view();
 }
 
 void bridge::CallFunction(const char* function)

@@ -1,4 +1,3 @@
-#include <fstream>
 #include <sstream>
 
 #include "../core/src/bridge.h"
@@ -6,7 +5,7 @@
 
 #include "window.h"
 
-Window* window_;
+Window* Window::window_;
 
 void web_view_script_message_received(WebKitUserContentManager* manager, WebKitJavascriptResult* js_result, gpointer user_data)
 {
@@ -28,13 +27,13 @@ void web_view_run_javascript_finished(GObject* sourceObject, GAsyncResult* res, 
 
 void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event, gpointer user_data)
 {
-    if (load_event == WEBKIT_LOAD_FINISHED && user_data == reinterpret_cast<void*>(window_->sender_))
+    if (load_event == WEBKIT_LOAD_FINISHED && user_data == reinterpret_cast<void*>(Window::window_->sender_))
     {
         std::ostringstream os;
         os <<
             "var Handler = window.webkit.messageHandlers.Handler_;"
             "var Handler_Receiver = "
-            << window_->sender_ << ";"
+            << Window::window_->sender_ << ";"
             "function CallHandler(id, command, info)"
             "{"
             "    Handler.postMessage(Handler_Receiver.toString() + \" \" + id + \" \" + command + \" \" + info);"
@@ -56,6 +55,9 @@ bool Window::handle_key(GdkEventKey *event)
 Window::Window(std::string path)
     : path_{ "file://" + std::filesystem::path(path).parent_path().string() + "/assets/" }
     , pixels_{ nullptr }
+    , image_view_width_{ 0 }
+    , image_view_height_{ 0 }
+    , image_resized_ { false }
     , sender_{ 0 }
 {
     window_ = this;
@@ -73,11 +75,26 @@ Window::Window(std::string path)
     web_view_widget_->show();
     image_view_widget_.signal_draw().connect([this](const Cairo::RefPtr<Cairo::Context>& cr)
     {
+        auto allocation = image_view_widget_.get_allocation();
+        cr->scale((double)allocation.get_width() / (double)pixels_->get_width(), (double)allocation.get_height() / (double)pixels_->get_height());
         Gdk::Cairo::set_source_pixbuf(cr, pixels_);
         cr->paint();
         return true;
     });
+    image_view_widget_.signal_configure_event().connect([this](GdkEventConfigure* event)
+    {
+        image_view_width_ = event->width;
+        image_view_height_ = event->height;
+        image_resized_ = true;
+        return true;
+    });
     image_view_widget_.show();
+    container_.add(*web_view_widget_, "web");
+    container_.set_visible_child("web");
+    container_.add(image_view_widget_, "image");
+    container_.set_visible_child("image");
+    add(container_);
+    container_.show();
     interface::Begin();
     interface::Create();
     interface::Start();
@@ -98,7 +115,18 @@ __uint32_t* Window::get_pixels()
 
 void Window::refresh_image_view()
 {
-    image_view_widget_.queue_draw();
+    // consider double buffer
+    if (!image_resized_)
+    {
+        image_view_widget_.queue_draw();
+    }
+    else
+    {
+        int image_height = create_pixels(pixels_->get_width());
+        std::ostringstream info;
+        info << pixels_->get_width() << " " << image_height;
+        interface::Handle("body", "resize", info.str().c_str());
+    }
 }
 
 void Window::on_post_message()
@@ -138,14 +166,15 @@ void Window::on_need_restart()
 void Window::load_view(const __int32_t sender, const __int32_t view_info, const char* waves)
 {
     sender_ = sender;
+    //LoadAudio(waves, new Runnable()
 }
 
 void Window::load_web_view(const __int32_t sender, const __int32_t view_info,
     const char* html, const char* waves)
 {
-    remove();
-    add(*web_view_widget_);
-    //pixels_ = null;
+    container_.set_visible_child("web");
+    pixels_.reset();
+
     // @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
     // {
     //     Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
@@ -155,146 +184,31 @@ void Window::load_web_view(const __int32_t sender, const __int32_t view_info,
     g_signal_connect(web_view_, "load-changed", GCallback(web_view_load_changed), reinterpret_cast<void*>(sender));
     auto path = path_ + "html/" + html + ".htm";
     webkit_web_view_load_uri(web_view_, path.c_str());
-    // LoadAudio(waves, new Runnable()
-    // {
-    //     public void run()
-    //     {
-               interface::HandleAsync(sender, "body", "ready", "");
-    //     }
-    // });
     load_view(sender, view_info, waves);
+    interface::HandleAsync(sender, "body", "ready", "");
 }
 
 void Window::load_image_view(const __int32_t sender, const __int32_t view_info,
     const __int32_t image_width, const char* waves)
 {
-    remove();
-    add(image_view_widget_);
-    float scale = (float)image_width / (float)image_view_widget_.get_allocation().get_width();
-    __int32_t image_height = (__int32_t)(image_view_widget_.get_allocation().get_height() * scale);
-    scale = 1;
+    container_.set_visible_child("image");
+    int image_height = create_pixels(image_width);
+    load_view(sender, view_info, waves);
+    std::ostringstream info;
+    info << image_width / 10 << " " << image_width << " " << image_height << " " << 0x02010003;
+    interface::HandleAsync(sender_, "body", "ready", info.str().c_str());
+}
+
+int Window::create_pixels(int image_width)
+{
+    float scale = (float)image_width / (float)image_view_width_;
+    int image_height = (__int32_t)(image_view_height_ * scale);
     guint8* rgb_data = new guint8[4 * image_width * image_height];
     pixels_ = Gdk::Pixbuf::create_from_data(rgb_data, Gdk::Colorspace::COLORSPACE_RGB, true, 8, image_width, image_height, 4 * image_width,
     [rgb_data](const guint8*)
     {
         delete[] rgb_data;
     });
-    std::ostringstream info;
-    info << (int)(196 * scale) << " " << image_width << " " << image_height << " " << 0x02010003;
-    //LoadAudio(waves, new Runnable()
-    // {
-    //     public void run()
-    //     {
-                interface::HandleAsync(sender, "body", "ready", info.str().c_str());
-    //     }
-    // });
-    load_view(sender, view_info, waves);
-}
-
-void bridge::NeedRestart()
-{
-    window_->need_restart_();
-}
-
-void bridge::LoadWebView(const __int32_t sender, const __int32_t view_info,
-    const char* html, const char* waves)
-{
-    window_->dispatch_lock_.lock();
-    window_->load_web_view_queue_.push({sender, view_info, html, waves});
-    window_->dispatch_lock_.unlock();
-    window_->load_web_view_();
-}
-
-void bridge::LoadImageView(const __int32_t sender, const __int32_t view_info,
-    const __int32_t image_width, const char* waves)
-{
-    window_->dispatch_lock_.lock();
-    window_->load_image_view_queue_.push({sender, view_info, image_width, waves});
-    window_->dispatch_lock_.unlock();
-    window_->load_image_view_();
-}
-
-__uint32_t* bridge::GetPixels()
-{
-    return window_->get_pixels();
-}
-
-void bridge::ReleasePixels(__uint32_t* const pixels)
-{
-}
-
-void bridge::RefreshImageView()
-{
-    window_->refresh_image_view();
-}
-
-void bridge::CallFunction(const char* function)
-{
-    //window_->web_view_.evaluate(function);
-}
-
-std::string bridge::GetAsset(const char* key)
-{
-    std::ifstream asset(key);
-    return {std::istreambuf_iterator<char>(asset), std::istreambuf_iterator<char>()};
-}
-
-std::string bridge::GetPreference(const char* key)
-{
-    // jstring jKey = env_->NewStringUTF(key);
-    // jstring jValue = (jstring)env_->CallObjectMethod(me_, get_preference_, jKey);
-    // const char* szValue = env_->GetStringUTFChars(jValue, nullptr);
-    // std::string value = szValue;
-    // env_->ReleaseStringUTFChars(jValue, szValue);
-    // env_->DeleteLocalRef(jKey);
-    // env_->DeleteLocalRef(jValue);
-    // return value;
-    return "";
-}
-
-void bridge::SetPreference(const char* key, const char* value)
-{
-    // jstring jKey = env_->NewStringUTF(key);
-    // jstring jValue = env_->NewStringUTF(value);
-    // env_->CallVoidMethod(me_, set_preference_, jKey, jValue);
-    // env_->DeleteLocalRef(jKey);
-    // env_->DeleteLocalRef(jValue);
-}
-
-void bridge::PostThreadMessage(__int32_t receiver, const char* id, const char* command, const char* info)
-{
-    window_->dispatch_lock_.lock();
-    window_->post_message_queue_.push({receiver, id, command, info});
-    window_->dispatch_lock_.unlock();
-    window_->post_message_();
-}
-
-void bridge::AddParam(const char *key, const char *value)
-{
-    // jstring jKey = env_->NewStringUTF(key);
-    // jstring jValue = env_->NewStringUTF(value);
-    // env_->CallVoidMethod(me_, add_param_, jKey, jValue);
-    // env_->DeleteLocalRef(jKey);
-    // env_->DeleteLocalRef(jValue);
-}
-
-void bridge::PostHttp(const __int32_t sender, const char* id, const char* command, const char *url)
-{
-    // jstring jId = env_->NewStringUTF(id);
-    // jstring jCommand = env_->NewStringUTF(command);
-    // jstring jUrl = env_->NewStringUTF(url);
-    // env_->CallVoidMethod(me_, post_http_, sender, jId, jCommand, jUrl);
-    // env_->DeleteLocalRef(jId);
-    // env_->DeleteLocalRef(jCommand);
-    // env_->DeleteLocalRef(jUrl);
-}
-
-void bridge::PlayAudio(const __int32_t index)
-{
-    // env_->CallVoidMethod(me_, play_audio_, index);
-}
-
-void bridge::Exit()
-{
-    window_->close();
+    image_resized_ = false;
+    return image_height;
 }

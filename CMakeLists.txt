@@ -31,7 +31,7 @@ include_directories(${WEBKIT2GTK_INCLUDE_DIRS})
 
 add_compile_definitions(PROJECT_NAME="${CMAKE_PROJECT_NAME}")
 add_compile_definitions(APPLICATION_ID="${CPACK_PACKAGE_VENDOR}")
-add_executable("${CMAKE_PROJECT_NAME}" "main.cpp" "window.cpp")
+add_executable("${CMAKE_PROJECT_NAME}" "main.cpp" "bridge.cpp" "window.cpp")
 file(GLOB core_sources "../core/src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${core_sources})
 file(GLOB main_sources "../../src/*.cpp")

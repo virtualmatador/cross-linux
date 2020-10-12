@@ -36,6 +36,9 @@ struct LoadImageViewDispatch
 class Window: public Gtk::Window
 {
 public:
+    static Window* window_;
+
+public:
     Window(std::string path);
     ~Window();
     __uint32_t* get_pixels();
@@ -54,13 +57,18 @@ private:
     void load_image_view(const __int32_t sender, const __int32_t view_info,
         const __int32_t image_width, const char* waves);
     bool handle_key(GdkEventKey *event);
+    int create_pixels(int image_width);
 
 private:
+    Gtk::Stack container_;
     std::string path_;
     WebKitWebView* web_view_;
     Gtk::Widget* web_view_widget_;
     Glib::RefPtr<Gdk::Pixbuf> pixels_;
     Gtk::DrawingArea image_view_widget_;
+    int image_view_width_;
+    int image_view_height_;
+    bool image_resized_;
 
 public:
     __int32_t sender_;

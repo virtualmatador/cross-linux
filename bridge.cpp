@@ -1,3 +1,11 @@
+//
+//  bridge.cpp
+//  cross
+//
+//  Created by Ali Asadpoor on 10/11/20.
+//  Copyright © 2020 Shaidin. All rights reserved.
+//
+
 #include <fstream>
 
 #include "../core/src/bridge.h"
@@ -13,23 +21,23 @@ void bridge::LoadWebView(const __int32_t sender, const __int32_t view_info,
     const char* html, const char* waves)
 {
     Window::window_->dispatch_lock_.lock();
-    Window::window_->load_web_view_queue_.push({sender, view_info, html, waves});
+    Window::window_->web_view_.dispatch_queue_.push({sender, view_info, html, waves});
     Window::window_->dispatch_lock_.unlock();
-    Window::window_->load_web_view_();
+    Window::window_->web_view_.dispatcher_();
 }
 
 void bridge::LoadImageView(const __int32_t sender, const __int32_t view_info,
     const __int32_t image_width, const char* waves)
 {
     Window::window_->dispatch_lock_.lock();
-    Window::window_->load_image_view_queue_.push({sender, view_info, image_width, waves});
+    Window::window_->image_view_.dispatch_queue_.push({sender, view_info, image_width, waves});
     Window::window_->dispatch_lock_.unlock();
-    Window::window_->load_image_view_();
+    Window::window_->image_view_.dispatcher_();
 }
 
 __uint32_t* bridge::GetPixels()
 {
-    return Window::window_->get_pixels();
+    return Window::window_->image_view_.get_pixels();
 }
 
 void bridge::ReleasePixels(__uint32_t* const pixels)
@@ -38,7 +46,7 @@ void bridge::ReleasePixels(__uint32_t* const pixels)
 
 void bridge::RefreshImageView()
 {
-    Window::window_->refresh_image_view();
+    Window::window_->image_view_.refresh_image_view();
 }
 
 void bridge::CallFunction(const char* function)

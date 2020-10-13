@@ -18,28 +18,64 @@ ImageWidget::ImageWidget()
     , image_view_height_{ 0 }
     , image_resized_ { false }
 {
+    add_events(
+        Gdk::EventMask::BUTTON_PRESS_MASK |
+        Gdk::EventMask::BUTTON_RELEASE_MASK |
+        Gdk::EventMask::BUTTON1_MOTION_MASK);
     dispatcher_.connect(sigc::mem_fun(*this, &ImageWidget::on_load_image_view));
-    signal_draw().connect([this](const Cairo::RefPtr<Cairo::Context>& cr)
-    {
-        auto allocation = get_allocation();
-        cr->scale((double)allocation.get_width() / (double)pixels_->get_width(), (double)allocation.get_height() / (double)pixels_->get_height());
-        Gdk::Cairo::set_source_pixbuf(cr, pixels_);
-        cr->paint();
-        return true;
-    });
-    signal_configure_event().connect([this](GdkEventConfigure* event)
-    {
-        image_view_width_ = event->width;
-        image_view_height_ = event->height;
-        image_resized_ = true;
-        return true;
-    });
     show();
 }
 
 ImageWidget::~ImageWidget()
 {
     
+}
+
+bool ImageWidget::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
+{
+    auto allocation = get_allocation();
+    cr->scale((double)allocation.get_width() / (double)pixels_->get_width(), (double)allocation.get_height() / (double)pixels_->get_height());
+    Gdk::Cairo::set_source_pixbuf(cr, pixels_);
+    cr->paint();
+    return true;
+}
+
+bool ImageWidget::on_button_press_event(GdkEventButton* button_event)
+{
+    std::stringstream is;
+    is << button_event->x * pixels_->get_width() / image_view_width_;
+    is << " ";
+    is << button_event->y * pixels_->get_height() / image_view_height_;
+    interface::Handle("body", "touch-begin", is.str().c_str());
+    return true;
+}
+
+bool ImageWidget::on_motion_notify_event(GdkEventMotion* motion_event)
+{
+    std::stringstream is;
+    is << motion_event->x * pixels_->get_width() / image_view_width_;
+    is << " ";
+    is << motion_event->y * pixels_->get_height() / image_view_height_;
+    interface::Handle("body", "touch-move", is.str().c_str());
+    return true;
+}
+
+bool ImageWidget::on_button_release_event(GdkEventButton* release_event)
+{
+    std::stringstream is;
+    is << release_event->x * pixels_->get_width() / image_view_width_;
+    is << " ";
+    is << release_event->y * pixels_->get_height() / image_view_height_;
+    interface::Handle("body", "touch-end", is.str().c_str());
+    return true;
+}
+
+bool ImageWidget::on_configure_event(GdkEventConfigure* configure_event)
+{
+    image_view_width_ = configure_event->width;
+    image_view_height_ = configure_event->height;
+    image_resized_ = true;
+    return true;
 }
 
 __uint32_t* ImageWidget::get_pixels()

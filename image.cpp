@@ -130,9 +130,8 @@ int ImageWidget::create_pixels(int image_width)
 void ImageWidget::load_image_view(const __int32_t sender, const __int32_t view_info,
     const __int32_t image_width, const char* waves)
 {
-    Window::window_->container_.set_visible_child("image");
+    Window::window_->load_view(sender, view_info, waves, "image");
     int image_height = create_pixels(image_width);
-    Window::window_->load_view(sender, view_info, waves);
     std::ostringstream info;
     info << image_width / 10 << " " << image_width << " " << image_height << " " << 0x02010003;
     interface::HandleAsync(Window::window_->sender_, "body", "ready", info.str().c_str());

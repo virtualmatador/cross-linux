@@ -62,24 +62,22 @@ std::string bridge::GetAsset(const char* key)
 
 std::string bridge::GetPreference(const char* key)
 {
-    // jstring jKey = env_->NewStringUTF(key);
-    // jstring jValue = (jstring)env_->CallObjectMethod(me_, get_preference_, jKey);
-    // const char* szValue = env_->GetStringUTFChars(jValue, nullptr);
-    // std::string value = szValue;
-    // env_->ReleaseStringUTFChars(jValue, szValue);
-    // env_->DeleteLocalRef(jKey);
-    // env_->DeleteLocalRef(jValue);
-    // return value;
-    return "";
+    std::filesystem::path value_path = "config";
+    value_path.append(key);
+    std::ifstream value_stream (value_path.string());
+    std::string value((std::istreambuf_iterator<char>(value_stream)), std::istreambuf_iterator<char>());
+    return value;
 }
 
 void bridge::SetPreference(const char* key, const char* value)
 {
-    // jstring jKey = env_->NewStringUTF(key);
-    // jstring jValue = env_->NewStringUTF(value);
-    // env_->CallVoidMethod(me_, set_preference_, jKey, jValue);
-    // env_->DeleteLocalRef(jKey);
-    // env_->DeleteLocalRef(jValue);
+    std::filesystem::path value_path = "config";
+    value_path.append(key);
+    std::ofstream value_stream (value_path.string());
+    if (value_stream)
+    {
+        value_stream << value;
+    }
 }
 
 void bridge::PostThreadMessage(__int32_t receiver, const char* id, const char* command, const char* info)

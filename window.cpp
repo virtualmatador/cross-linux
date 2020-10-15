@@ -66,8 +66,9 @@ void Window::on_need_restart()
     interface::Restart();
 }
 
-void Window::load_view(const __int32_t sender, const __int32_t view_info, const char* waves)
+void Window::load_view(const __int32_t sender, const __int32_t view_info, const char* waves, const char* view_name)
 {
     sender_ = sender;
     //LoadAudio(waves, new Runnable()
+    container_.set_visible_child(view_name);
 }

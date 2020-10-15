@@ -35,7 +35,7 @@ public:
 public:
     Window(std::string path);
     ~Window();
-    void load_view(const __int32_t sender, const __int32_t view_info, const char* waves);
+    void load_view(const __int32_t sender, const __int32_t view_info, const char* waves, const char* view_name);
 
 private:
     void on_need_restart();

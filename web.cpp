@@ -24,6 +24,7 @@ void web_view_script_message_received(WebKitUserContentManager* manager, WebKitJ
     is >> sender;
     is >> id;
     is >> command;
+    is.ignore(1);
     std::getline(is, info);
     interface::HandleAsync(sender, id.c_str(), command.c_str(), info.c_str());
     webkit_javascript_result_unref(js_result);
@@ -87,7 +88,7 @@ void WebWidget::on_load_web_view()
 void WebWidget::load_web_view(const __int32_t sender, const __int32_t view_info,
     const char* html, const char* waves)
 {
-    Window::window_->container_.set_visible_child("web");
+    Window::window_->load_view(sender, view_info, waves, "web");
     Window::window_->image_view_.reset_pixels();
 
     // @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
@@ -98,6 +99,5 @@ void WebWidget::load_web_view(const __int32_t sender, const __int32_t view_info,
     // }
     g_signal_connect(&get(), "load-changed", GCallback(web_view_load_changed), reinterpret_cast<void*>(sender));
     auto path = Window::window_->path_ + "html/" + html + ".htm";
-    Window::window_->load_view(sender, view_info, waves);
     webkit_web_view_load_uri(&get(), path.c_str());
 }

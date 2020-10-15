@@ -51,7 +51,7 @@ void bridge::RefreshImageView()
 
 void bridge::CallFunction(const char* function)
 {
-    //window_->web_view_.evaluate(function);
+    Window::window_->web_view_.evaluate(function);
 }
 
 std::string bridge::GetAsset(const char* key)

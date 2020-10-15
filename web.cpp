@@ -31,6 +31,10 @@ void web_view_script_message_received(WebKitUserContentManager* manager, WebKitJ
 
 void web_view_run_javascript_finished(GObject* sourceObject, GAsyncResult* res, gpointer userData)
 {
+    if (userData == (void*)0x01)
+    {
+        interface::HandleAsync(Window::window_->sender_, "body", "ready", "");
+    }
 }
 
 void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event, gpointer user_data)
@@ -46,7 +50,7 @@ void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event, 
             "{"
             "    Handler.postMessage(Handler_Receiver.toString() + \" \" + id + \" \" + command + \" \" + info);"
             "}";
-        webkit_web_view_run_javascript(web_view, os.str().c_str(), nullptr, web_view_run_javascript_finished, nullptr);
+        webkit_web_view_run_javascript(web_view, os.str().c_str(), nullptr, web_view_run_javascript_finished, (void*)0x01);
     }
 }
 
@@ -64,6 +68,11 @@ WebWidget::WebWidget()
 WebWidget::~WebWidget()
 {
     Glib::unwrap(web_widget_);
+}
+
+void WebWidget::evaluate(const char* function)
+{
+    webkit_web_view_run_javascript(&get(), function, nullptr, web_view_run_javascript_finished, nullptr);
 }
 
 void WebWidget::on_load_web_view()
@@ -89,7 +98,6 @@ void WebWidget::load_web_view(const __int32_t sender, const __int32_t view_info,
     // }
     g_signal_connect(&get(), "load-changed", GCallback(web_view_load_changed), reinterpret_cast<void*>(sender));
     auto path = Window::window_->path_ + "html/" + html + ".htm";
-    webkit_web_view_load_uri(&get(), path.c_str());
     Window::window_->load_view(sender, view_info, waves);
-    interface::HandleAsync(Window::window_->sender_, "body", "ready", "");
+    webkit_web_view_load_uri(&get(), path.c_str());
 }

@@ -26,6 +26,7 @@ class WebWidget : public std::reference_wrapper<WebKitWebView>
 public:
     WebWidget();
     ~WebWidget();
+    void evaluate(const char* function);
 
 private:
     void load_web_view(const __int32_t sender, const __int32_t view_info,

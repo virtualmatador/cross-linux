@@ -9,6 +9,7 @@
 #ifndef DESKTOP_WEB_H
 #define DESKTOP_WEB_H
 
+#include <mutex>
 #include <queue>
 
 #include <webkit2/webkit2.h>
@@ -26,15 +27,20 @@ class WebWidget : public std::reference_wrapper<WebKitWebView>
 public:
     WebWidget();
     ~WebWidget();
+    void push_load(const __int32_t sender, const __int32_t view_info,
+        const char* html, const char* waves);
     void evaluate(const char* function);
 
 private:
-    void load_web_view(const __int32_t sender, const __int32_t view_info,
+    void on_load(const __int32_t sender, const __int32_t view_info,
         const char* html, const char* waves);
-    void on_load_web_view();
+    void pop_load();
 
 public:
     Gtk::Widget* web_widget_;
+
+private:
+    std::mutex dispatch_lock_;
     Glib::Dispatcher dispatcher_;
     std::queue<LoadWebViewDispatch> dispatch_queue_;
 };

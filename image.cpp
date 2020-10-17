@@ -22,13 +22,22 @@ ImageWidget::ImageWidget()
         Gdk::EventMask::BUTTON_PRESS_MASK |
         Gdk::EventMask::BUTTON_RELEASE_MASK |
         Gdk::EventMask::BUTTON1_MOTION_MASK);
-    dispatcher_.connect(sigc::mem_fun(*this, &ImageWidget::on_load_image_view));
+    dispatcher_.connect(sigc::mem_fun(*this, &ImageWidget::pop_load));
     show();
 }
 
 ImageWidget::~ImageWidget()
 {
     
+}
+
+void ImageWidget::push_load(const __int32_t sender, const __int32_t view_info,
+    const __int32_t image_width, const char* waves)
+{
+    dispatch_lock_.lock();
+    dispatch_queue_.push({sender, view_info, image_width, waves});
+    dispatch_lock_.unlock();
+    dispatcher_();
 }
 
 bool ImageWidget::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
@@ -104,13 +113,13 @@ void ImageWidget::reset_pixels()
     pixels_.reset();
 }
 
-void ImageWidget::on_load_image_view()
+void ImageWidget::pop_load()
 {
-    Window::window_->dispatch_lock_.lock();
+    dispatch_lock_.lock();
     auto dispatch_info = dispatch_queue_.front();
     dispatch_queue_.pop();
-    Window::window_->dispatch_lock_.unlock();
-    load_image_view(dispatch_info.sender, dispatch_info.view_info, dispatch_info.image_width, dispatch_info.waves);
+    dispatch_lock_.unlock();
+    on_load(dispatch_info.sender, dispatch_info.view_info, dispatch_info.image_width, dispatch_info.waves);
 }
 
 int ImageWidget::create_pixels(int image_width)
@@ -127,7 +136,7 @@ int ImageWidget::create_pixels(int image_width)
     return image_height;
 }
 
-void ImageWidget::load_image_view(const __int32_t sender, const __int32_t view_info,
+void ImageWidget::on_load(const __int32_t sender, const __int32_t view_info,
     const __int32_t image_width, const char* waves)
 {
     Window::window_->load_view(sender, view_info, waves, "image");

@@ -21,6 +21,7 @@ set(CPACK_PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
 include(CPack)
 
 find_package(PkgConfig)
+
 pkg_check_modules(GTKMM gtkmm-3.0)
 link_directories(${GTKMM_LIBRARY_DIRS})
 include_directories(${GTKMM_INCLUDE_DIRS})
@@ -39,6 +40,6 @@ file(GLOB main_sources "../../src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${main_sources})
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 target_link_libraries("${CMAKE_PROJECT_NAME}"
-    ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} pthread)
+    ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} soundio pthread)
 install(TARGETS "${CMAKE_PROJECT_NAME}" DESTINATION "bin")
 install(DIRECTORY "config" DESTINATION ".")

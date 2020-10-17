@@ -9,6 +9,7 @@
 #ifndef DESKTOP_IMAGE_H
 #define DESKTOP_IMAGE_H
 
+#include <mutex>
 #include <queue>
 
 #include <gtkmm.h>
@@ -26,6 +27,8 @@ class ImageWidget : public Gtk::DrawingArea
 public:
     ImageWidget();
     ~ImageWidget();
+    void push_load(const __int32_t sender, const __int32_t view_info,
+        const __int32_t image_width, const char* waves);
     __uint32_t* get_pixels();
     void refresh_image_view();
     void reset_pixels();
@@ -38,9 +41,9 @@ private:
     bool on_configure_event(GdkEventConfigure* configure_event) override;
 
 private:
-    void load_image_view(const __int32_t sender, const __int32_t view_info,
+    void on_load(const __int32_t sender, const __int32_t view_info,
         const __int32_t image_width, const char* waves);
-    void on_load_image_view();
+    void pop_load();
     int create_pixels(int image_width);
 
 private:
@@ -48,8 +51,7 @@ private:
     int image_view_width_;
     int image_view_height_;
     bool image_resized_;
-
-public:
+    std::mutex dispatch_lock_;
     Glib::Dispatcher dispatcher_;
     std::queue<LoadImageViewDispatch> dispatch_queue_;
 };

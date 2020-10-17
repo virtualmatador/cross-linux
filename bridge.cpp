@@ -14,25 +14,19 @@
 
 void bridge::NeedRestart()
 {
-    Window::window_->need_restart_();
+    Window::window_->post_restart_message();
 }
 
 void bridge::LoadWebView(const __int32_t sender, const __int32_t view_info,
     const char* html, const char* waves)
 {
-    Window::window_->dispatch_lock_.lock();
-    Window::window_->web_view_.dispatch_queue_.push({sender, view_info, html, waves});
-    Window::window_->dispatch_lock_.unlock();
-    Window::window_->web_view_.dispatcher_();
+    Window::window_->web_view_.push_load(sender, view_info, html, waves);
 }
 
 void bridge::LoadImageView(const __int32_t sender, const __int32_t view_info,
     const __int32_t image_width, const char* waves)
 {
-    Window::window_->dispatch_lock_.lock();
-    Window::window_->image_view_.dispatch_queue_.push({sender, view_info, image_width, waves});
-    Window::window_->dispatch_lock_.unlock();
-    Window::window_->image_view_.dispatcher_();
+    Window::window_->image_view_.push_load(sender, view_info, image_width, waves);
 }
 
 __uint32_t* bridge::GetPixels()
@@ -82,10 +76,7 @@ void bridge::SetPreference(const char* key, const char* value)
 
 void bridge::PostThreadMessage(__int32_t receiver, const char* id, const char* command, const char* info)
 {
-    Window::window_->dispatch_lock_.lock();
-    Window::window_->post_message_queue_.push({receiver, id, command, info});
-    Window::window_->dispatch_lock_.unlock();
-    Window::window_->post_message_();
+    Window::window_->post_thread_message(receiver, id, command, info);
 }
 
 void bridge::AddParam(const char *key, const char *value)
@@ -110,7 +101,7 @@ void bridge::PostHttp(const __int32_t sender, const char* id, const char* comman
 
 void bridge::PlayAudio(const __int32_t index)
 {
-    // env_->CallVoidMethod(me_, play_audio_, index);
+    Window::window_->play_audio(index);
 }
 
 void bridge::Exit()

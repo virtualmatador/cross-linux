@@ -58,7 +58,7 @@ void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event, 
 WebWidget::WebWidget()
     : std::reference_wrapper<WebKitWebView>{*(WebKitWebView*)webkit_web_view_new()}
 {
-    dispatcher_.connect(sigc::mem_fun(*this, &WebWidget::on_load_web_view));
+    dispatcher_.connect(sigc::mem_fun(*this, &WebWidget::pop_load));
     WebKitUserContentManager *manager = webkit_web_view_get_user_content_manager(&get());
     g_signal_connect(manager, "script-message-received::Handler_", G_CALLBACK(web_view_script_message_received), nullptr);
     webkit_user_content_manager_register_script_message_handler (manager, "Handler_");
@@ -71,21 +71,30 @@ WebWidget::~WebWidget()
     Glib::unwrap(web_widget_);
 }
 
+void WebWidget::push_load(const __int32_t sender, const __int32_t view_info,
+    const char* html, const char* waves)
+{
+    dispatch_lock_.lock();
+    dispatch_queue_.push({sender, view_info, html, waves});
+    dispatch_lock_.unlock();
+    dispatcher_();
+}
+
 void WebWidget::evaluate(const char* function)
 {
     webkit_web_view_run_javascript(&get(), function, nullptr, web_view_run_javascript_finished, nullptr);
 }
 
-void WebWidget::on_load_web_view()
+void WebWidget::pop_load()
 {
-    Window::window_->dispatch_lock_.lock();
+    dispatch_lock_.lock();
     auto dispatch_info = dispatch_queue_.front();
     dispatch_queue_.pop();
-    Window::window_->dispatch_lock_.unlock();
-    load_web_view(dispatch_info.sender, dispatch_info.view_info, dispatch_info.html, dispatch_info.waves);
+    dispatch_lock_.unlock();
+    on_load(dispatch_info.sender, dispatch_info.view_info, dispatch_info.html, dispatch_info.waves);
 }
 
-void WebWidget::load_web_view(const __int32_t sender, const __int32_t view_info,
+void WebWidget::on_load(const __int32_t sender, const __int32_t view_info,
     const char* html, const char* waves)
 {
     Window::window_->load_view(sender, view_info, waves, "web");
@@ -98,6 +107,6 @@ void WebWidget::load_web_view(const __int32_t sender, const __int32_t view_info,
     //     return true;
     // }
     g_signal_connect(&get(), "load-changed", GCallback(web_view_load_changed), reinterpret_cast<void*>(sender));
-    auto path = Window::window_->path_ + "html/" + html + ".htm";
+    auto path = "file://" + Window::window_->path_ + "/assets/html/" + html + ".htm";
     webkit_web_view_load_uri(&get(), path.c_str());
 }

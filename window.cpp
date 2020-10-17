@@ -6,8 +6,10 @@
 //  Copyright © 2020 Shaidin. All rights reserved.
 //
 
+#include <cstring>
 #include <fstream>
 #include <sstream>
+#include <string_view>
 
 #include "../core/src/bridge.h"
 #include "../core/src/interface.h"
@@ -19,14 +21,8 @@ Window* Window::window_;
 void sound_callback(struct SoundIoOutStream *outstream,
         int frame_count_min, int frame_count_max)
 {
-    static const float PI = 3.1415926535f;
-
     PlayBackInfo* playback_info = (PlayBackInfo*)outstream->userdata;
-    const struct SoundIoChannelLayout *layout = &outstream->layout;
-    float float_sample_rate = outstream->sample_rate;
-    float seconds_per_frame = 1.0f / float_sample_rate;
-    struct SoundIoChannelArea *areas;
-    int frames_left = playback_info->audio_info->frames - playback_info->progress;
+    int frames_left = (playback_info->data->size() - playback_info->progress) / (outstream->bytes_per_sample * outstream->layout.channel_count);
     if (frames_left == 0)
     {
         if (!playback_info->done)
@@ -43,6 +39,7 @@ void sound_callback(struct SoundIoOutStream *outstream,
     while (frames_left > 0)
     {
         int frame_count = frames_left;
+        SoundIoChannelArea *areas;
         if (soundio_outstream_begin_write(outstream, &areas, &frame_count))
         {
         }
@@ -50,18 +47,20 @@ void sound_callback(struct SoundIoOutStream *outstream,
         {
             for (int frame = 0; frame < frame_count; ++frame)
             {
-                float sample = sin((playback_info->progress + frame) * seconds_per_frame * playback_info->pitch * 2.0f * PI) / 4.0f;
-                playback_info->pitch += 0.01f;
-                for (int channel = 0; channel < layout->channel_count; channel += 1)
+                for (int channel = 0; channel < outstream->layout.channel_count; ++channel)
                 {
-                    float *ptr = (float*)(areas[channel].ptr + areas[channel].step * frame);
-                    *ptr = sample;
+                    std::memcpy(areas[channel].ptr + areas[channel].step * frame,
+                        playback_info->data->data() +
+                            playback_info->progress +
+                            frame * outstream->bytes_per_sample * outstream->layout.channel_count +
+                            channel * outstream->bytes_per_sample,
+                        outstream->bytes_per_sample);
                 }
             }
             if (soundio_outstream_end_write(outstream))
             {
             }
-            playback_info->progress += frame_count;
+            playback_info->progress += frame_count * outstream->bytes_per_sample * outstream->layout.channel_count;
             frames_left -= frame_count;
         }
     }
@@ -142,12 +141,70 @@ void Window::load_view(const __int32_t sender, const __int32_t view_info, const 
     std::string wave;
     while (is >> wave)
     {
-        std::ifstream wave_file(path_ + "/assets/wave/" + wave + ".wav");
+        std::ifstream wave_file {path_ + "/assets/wave/" + wave + ".wav", std::ios_base::openmode::_S_bin};
         if (!wave_file)
         {
-            throw std::runtime_error("wave_file");
+            throw std::runtime_error("No file");
         }
-        waves_.push_back({SoundIoFormatFloat32NE, 440, 60000});
+        char buffer[4];
+        wave_file.read(buffer, sizeof(buffer));
+        if (std::string_view(buffer, 4) != "RIFF")
+        {
+            throw std::runtime_error("No RIFF");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        wave_file.read(buffer, sizeof(buffer));
+        if (std::string_view(buffer, 4) != "WAVE")
+        {
+            throw std::runtime_error("No WAVE");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        if (std::string_view(buffer, 4) != "fmt ")
+        {
+            throw std::runtime_error("No fmt");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        if (*(__int32_t*)buffer != 16)
+        {
+            throw std::runtime_error("No 16");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        if (*(short*)buffer != 1)
+        {
+            throw std::runtime_error("No PCM");
+        }
+        if (*(short*)(buffer + 2) != 2)
+        {
+            throw std::runtime_error("No Stereo");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        if (*(__int32_t*)buffer != 44100)
+        {
+            throw std::runtime_error("No 44100");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        if (*(__int32_t*)buffer != 176400)
+        {
+            throw std::runtime_error("No 176400");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        if (*(short*)buffer != 4)
+        {
+            throw std::runtime_error("No 4 BPS");
+        }
+        if (*(short*)(buffer + 2) != 16)
+        {
+            throw std::runtime_error("No 16 bit");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        if (std::string_view(buffer, 4) != "data")
+        {
+            throw std::runtime_error("No data");
+        }
+        wave_file.read(buffer, sizeof(buffer));
+        std::vector<char> data(*(__int32_t*)buffer);
+        wave_file.read(data.data(), data.size());
+        waves_.emplace_back(std::move(data));
     }
 }
 
@@ -159,8 +216,8 @@ void Window::play_audio(const __int32_t index)
         throw std::runtime_error("soundio_outstream_create");
     }
     outstream->write_callback = sound_callback;
-    PlayBackInfo* playback_info = new PlayBackInfo({&waves_[index], waves_[index].pitch, 0, false});
-    outstream->format = playback_info->audio_info->format;
+    PlayBackInfo* playback_info = new PlayBackInfo({&waves_[index], 0, false});
+    outstream->format = SoundIoFormatS16LE;
     outstream->userdata = playback_info;
     if (soundio_outstream_open(outstream))
     {

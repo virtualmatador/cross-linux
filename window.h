@@ -31,18 +31,10 @@ struct PostMessageDispatch
     const char* info;
 };
 
-struct AudioInfo
-{
-    SoundIoFormat format;
-    float pitch;
-    int frames;
-};
-
 struct PlayBackInfo
 {
-    const AudioInfo* audio_info;
-    float pitch;
-    int progress;
+    const std::vector<char>* data;
+    std::size_t progress;
     bool done;
 };
 
@@ -80,7 +72,7 @@ private:
     std::queue<PostMessageDispatch> post_message_queue_;
     SoundIo* soundio_;
     SoundIoDevice* sound_device_;
-    std::vector<AudioInfo> waves_;
+    std::vector<std::vector<char>> waves_;
     std::mutex destroy_stream_lock_;
     Glib::Dispatcher destroy_stream_dispatcher_;
     std::queue<SoundIoOutStream*> destroy_stream_queue_;

@@ -10,6 +10,7 @@
 #define DESKTOP_WINDOW_H
 
 #include <filesystem>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -34,6 +35,7 @@ struct PostMessageDispatch
 struct PlayBackInfo
 {
     const std::vector<char>* data;
+    std::list<SoundIoOutStream*>::iterator it;
     std::size_t progress;
     bool done;
 };
@@ -50,13 +52,16 @@ public:
     void post_thread_message(__int32_t receiver, const char* id, const char* command, const char* info);
     void load_view(const __int32_t sender, const __int32_t view_info, const char* waves, const char* view_name);
     void play_audio(const __int32_t index);
-    void push_audio_destroy(SoundIoOutStream* outstream);
+    void push_audio_destroy(SoundIoOutStream* outstream, bool callback);
     void pop_audio_destroy();
 
 private:
+    bool handle_key(GdkEventKey* event);
+
+private:
+    void clear_tracks();
     void on_need_restart();
     void on_post_message();
-    bool handle_key(GdkEventKey* event);
 
 public:
     Gtk::Stack container_;
@@ -73,6 +78,7 @@ private:
     SoundIo* soundio_;
     SoundIoDevice* sound_device_;
     std::vector<std::vector<char>> waves_;
+    std::list<SoundIoOutStream*> tracks_;
     std::mutex destroy_stream_lock_;
     Glib::Dispatcher destroy_stream_dispatcher_;
     std::queue<SoundIoOutStream*> destroy_stream_queue_;

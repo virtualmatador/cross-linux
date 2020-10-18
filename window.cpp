@@ -25,11 +25,7 @@ void sound_callback(struct SoundIoOutStream *outstream,
     int frames_left = (playback_info->data->size() - playback_info->progress) / (outstream->bytes_per_sample * outstream->layout.channel_count);
     if (frames_left == 0)
     {
-        if (!playback_info->done)
-        {
-            playback_info->done = true;
-            Window::window_->push_audio_destroy(outstream);
-        }
+        Window::window_->push_audio_destroy(outstream, true);
         return;
     }
     if (frames_left > frame_count_max)
@@ -114,7 +110,7 @@ Window::~Window()
     interface::Stop();
     interface::Destroy();
     interface::End();
-    // TODO stop playing waves
+    clear_tracks();
     soundio_device_unref(sound_device_);
     soundio_destroy(soundio_);
 }
@@ -136,7 +132,7 @@ void Window::load_view(const __int32_t sender, const __int32_t view_info, const 
 {
     sender_ = sender;
     container_.set_visible_child(view_name);
-    waves_.clear();
+    clear_tracks();
     std::istringstream is(waves);
     std::string wave;
     while (is >> wave)
@@ -215,9 +211,10 @@ void Window::play_audio(const __int32_t index)
     {
         throw std::runtime_error("soundio_outstream_create");
     }
+    tracks_.emplace_back(outstream);
     outstream->write_callback = sound_callback;
-    PlayBackInfo* playback_info = new PlayBackInfo({&waves_[index], 0, false});
     outstream->format = SoundIoFormatS16LE;
+    PlayBackInfo* playback_info = new PlayBackInfo({&waves_[index], std::prev(tracks_.end()), 0, false});
     outstream->userdata = playback_info;
     if (soundio_outstream_open(outstream))
     {
@@ -233,23 +230,54 @@ void Window::play_audio(const __int32_t index)
     }
 }
 
-void Window::push_audio_destroy(SoundIoOutStream* outstream)
+void Window::push_audio_destroy(SoundIoOutStream* outstream, bool callback)
 {
+    PlayBackInfo* playback_info = (PlayBackInfo*)outstream->userdata;
     destroy_stream_lock_.lock();
-    destroy_stream_queue_.push(outstream);
+    if (!playback_info->done)
+    {
+        playback_info->done = true;
+        destroy_stream_queue_.push(outstream);
+    }
     destroy_stream_lock_.unlock();
-    destroy_stream_dispatcher_();
+    if (callback)
+    {
+        destroy_stream_dispatcher_();
+    }
+    else
+    {
+        pop_audio_destroy();
+    }
 }
 
 void Window::pop_audio_destroy()
 {
-    destroy_stream_lock_.lock();
-    SoundIoOutStream* outstream = destroy_stream_queue_.front();
-    destroy_stream_queue_.pop();
-    destroy_stream_lock_.unlock();
-    PlayBackInfo* playback_info = (PlayBackInfo*)outstream->userdata;
-    soundio_outstream_destroy(outstream);
-    delete playback_info;
+    for (;;)
+    {
+        SoundIoOutStream* outstream;
+        destroy_stream_lock_.lock();
+        if (destroy_stream_queue_.size())
+        {
+            outstream = destroy_stream_queue_.front();
+            destroy_stream_queue_.pop();
+        }
+        else
+        {
+            outstream = nullptr;
+        }    
+        destroy_stream_lock_.unlock();
+        if (outstream)
+        {
+            PlayBackInfo* playback_info = (PlayBackInfo*)outstream->userdata;
+            soundio_outstream_destroy(outstream);
+            tracks_.erase(playback_info->it);
+            delete playback_info;
+        }
+        else
+        {
+            break;
+        }
+    }
 }
 
 bool Window::handle_key(GdkEventKey *event)
@@ -261,6 +289,15 @@ bool Window::handle_key(GdkEventKey *event)
     }
     return true;
 };
+
+void Window::clear_tracks()
+{
+    while (!tracks_.empty())
+    {
+        push_audio_destroy(tracks_.front(), false);
+    }
+    waves_.clear();
+}
 
 void Window::on_post_message()
 {

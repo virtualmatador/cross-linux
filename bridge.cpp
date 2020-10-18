@@ -56,8 +56,7 @@ std::string bridge::GetAsset(const char* key)
 
 std::string bridge::GetPreference(const char* key)
 {
-    std::filesystem::path value_path = "config";
-    value_path.append(key);
+    std::filesystem::path value_path = Window::window_->config_path_ / key;
     std::ifstream value_stream (value_path.string());
     std::string value((std::istreambuf_iterator<char>(value_stream)), std::istreambuf_iterator<char>());
     return value;
@@ -65,8 +64,7 @@ std::string bridge::GetPreference(const char* key)
 
 void bridge::SetPreference(const char* key, const char* value)
 {
-    std::filesystem::path value_path = "config";
-    value_path.append(key);
+    std::filesystem::path value_path = Window::window_->config_path_ / key;
     std::ofstream value_stream (value_path.string());
     if (value_stream)
     {

@@ -9,16 +9,9 @@ foreach(key_value ${manifest})
     set(${key} "${value}")
 endforeach()
 
-project(${cross_target})
-set(CMAKE_PROJECT_VERSION ${cross_version}.${cross_release})
+string(TOLOWER ${cross_target} project_name)
+project(${project_name} VERSION ${cross_version}.${cross_release})
 set(CPACK_PACKAGE_VENDOR ${cross_identifier})
-
-set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_VENDOR})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtkmm-3.0-1v5")
-
-set(CPACK_PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
-include(CPack)
 
 find_package(PkgConfig)
 
@@ -41,5 +34,14 @@ target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${main_sources})
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 target_link_libraries("${CMAKE_PROJECT_NAME}"
     ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} soundio pthread)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_VENDOR})
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-3-0,libwebkit2gtk-4.0-37,libsoundio1")
+endif()
+
+include(CPack)
+
 install(TARGETS "${CMAKE_PROJECT_NAME}" DESTINATION "bin")
-install(DIRECTORY "config" DESTINATION ".")
+install(DIRECTORY "../../assets" DESTINATION "share/${CMAKE_PROJECT_NAME}")

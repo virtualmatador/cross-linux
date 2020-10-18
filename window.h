@@ -46,7 +46,7 @@ public:
     static Window* window_;
 
 public:
-    Window(std::string path);
+    Window();
     ~Window();
     void post_restart_message();
     void post_thread_message(__int32_t receiver, const char* id, const char* command, const char* info);
@@ -59,6 +59,7 @@ private:
     bool handle_key(GdkEventKey* event);
 
 private:
+    void set_paths();
     void clear_tracks();
     void on_need_restart();
     void on_post_message();
@@ -67,7 +68,8 @@ public:
     Gtk::Stack container_;
     WebWidget web_view_;
     ImageWidget image_view_;
-    std::string path_;
+    std::filesystem::path assets_path_;
+    std::filesystem::path config_path_;
     __int32_t sender_;
 
 private:

@@ -107,6 +107,6 @@ void WebWidget::on_load(const __int32_t sender, const __int32_t view_info,
     //     return true;
     // }
     g_signal_connect(&get(), "load-changed", GCallback(web_view_load_changed), reinterpret_cast<void*>(sender));
-    auto path = "file://" + Window::window_->path_ + "/assets/html/" + html + ".htm";
+    std::string path = "file://" + (Window::window_->assets_path_ / "assets" / "html" / (std::string(html) + ".htm")).string();
     webkit_web_view_load_uri(&get(), path.c_str());
 }

@@ -6,6 +6,7 @@
 //  Copyright © 2020 Shaidin. All rights reserved.
 //
 
+#include <cstdint>
 #include <fstream>
 
 #include "../core/src/bridge.h"

@@ -16,9 +16,9 @@
 
 struct LoadImageViewDispatch
 {
-    const __int32_t sender;
-    const __int32_t view_info;
-    const __int32_t image_width;
+    const std::int32_t sender;
+    const std::int32_t view_info;
+    const std::int32_t image_width;
     const char* waves;
 };
 
@@ -27,9 +27,9 @@ class ImageWidget : public Gtk::DrawingArea
 public:
     ImageWidget();
     ~ImageWidget();
-    void push_load(const __int32_t sender, const __int32_t view_info,
-        const __int32_t image_width, const char* waves);
-    __uint32_t* get_pixels();
+    void push_load(const std::int32_t sender, const std::int32_t view_info,
+        const std::int32_t image_width, const char* waves);
+    std::uint32_t* get_pixels();
     void refresh_image_view();
     void reset_pixels();
 
@@ -41,8 +41,8 @@ private:
     bool on_configure_event(GdkEventConfigure* configure_event) override;
 
 private:
-    void on_load(const __int32_t sender, const __int32_t view_info,
-        const __int32_t image_width, const char* waves);
+    void on_load(const std::int32_t sender, const std::int32_t view_info,
+        const std::int32_t image_width, const char* waves);
     void pop_load();
     int create_pixels(int image_width);
 

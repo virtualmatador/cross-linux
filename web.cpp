@@ -19,7 +19,7 @@ void web_view_script_message_received(WebKitUserContentManager* manager, WebKitJ
 {
     auto value = webkit_javascript_result_get_js_value(js_result);
     std::istringstream is{ std::string(jsc_value_to_string(value)) };
-    __int32_t sender;
+    std::int32_t sender;
     std::string id, command, info;
     is >> sender;
     is >> id;
@@ -71,7 +71,7 @@ WebWidget::~WebWidget()
     Glib::unwrap(web_widget_);
 }
 
-void WebWidget::push_load(const __int32_t sender, const __int32_t view_info,
+void WebWidget::push_load(const std::int32_t sender, const std::int32_t view_info,
     const char* html, const char* waves)
 {
     dispatch_lock_.lock();
@@ -94,7 +94,7 @@ void WebWidget::pop_load()
     on_load(dispatch_info.sender, dispatch_info.view_info, dispatch_info.html, dispatch_info.waves);
 }
 
-void WebWidget::on_load(const __int32_t sender, const __int32_t view_info,
+void WebWidget::on_load(const std::int32_t sender, const std::int32_t view_info,
     const char* html, const char* waves)
 {
     Window::window_->load_view(sender, view_info, waves, "web");

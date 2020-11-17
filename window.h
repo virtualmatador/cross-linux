@@ -26,7 +26,7 @@
 
 struct PostMessageDispatch
 {
-    __int32_t sender;
+    std::int32_t sender;
     const char* id;
     const char* command;
     const char* info;
@@ -49,9 +49,9 @@ public:
     Window();
     ~Window();
     void post_restart_message();
-    void post_thread_message(__int32_t receiver, const char* id, const char* command, const char* info);
-    void load_view(const __int32_t sender, const __int32_t view_info, const char* waves, const char* view_name);
-    void play_audio(const __int32_t index);
+    void post_thread_message(std::int32_t receiver, const char* id, const char* command, const char* info);
+    void load_view(const std::int32_t sender, const std::int32_t view_info, const char* waves, const char* view_name);
+    void play_audio(const std::int32_t index);
     void push_audio_destroy(SoundIoOutStream* outstream, bool callback);
     void pop_audio_destroy();
 
@@ -70,7 +70,7 @@ public:
     ImageWidget image_view_;
     std::filesystem::path assets_path_;
     std::filesystem::path config_path_;
-    __int32_t sender_;
+    std::int32_t sender_;
 
 private:
     Glib::Dispatcher need_restart_;

@@ -31,8 +31,8 @@ ImageWidget::~ImageWidget()
     
 }
 
-void ImageWidget::push_load(const __int32_t sender, const __int32_t view_info,
-    const __int32_t image_width, const char* waves)
+void ImageWidget::push_load(const std::int32_t sender, const std::int32_t view_info,
+    const std::int32_t image_width, const char* waves)
 {
     dispatch_lock_.lock();
     dispatch_queue_.push({sender, view_info, image_width, waves});
@@ -87,9 +87,9 @@ bool ImageWidget::on_configure_event(GdkEventConfigure* configure_event)
     return true;
 }
 
-__uint32_t* ImageWidget::get_pixels()
+std::uint32_t* ImageWidget::get_pixels()
 {
-    return (__uint32_t*) pixels_->get_pixels();
+    return (std::uint32_t*) pixels_->get_pixels();
 }
 
 void ImageWidget::refresh_image_view()
@@ -125,7 +125,7 @@ void ImageWidget::pop_load()
 int ImageWidget::create_pixels(int image_width)
 {
     float scale = (float)image_width / (float)image_view_width_;
-    int image_height = (__int32_t)(image_view_height_ * scale);
+    int image_height = (std::int32_t)(image_view_height_ * scale);
     guint8* rgb_data = new guint8[4 * image_width * image_height];
     pixels_ = Gdk::Pixbuf::create_from_data(rgb_data, Gdk::Colorspace::COLORSPACE_RGB, true, 8, image_width, image_height, 4 * image_width,
     [rgb_data](const guint8*)
@@ -136,8 +136,8 @@ int ImageWidget::create_pixels(int image_width)
     return image_height;
 }
 
-void ImageWidget::on_load(const __int32_t sender, const __int32_t view_info,
-    const __int32_t image_width, const char* waves)
+void ImageWidget::on_load(const std::int32_t sender, const std::int32_t view_info,
+    const std::int32_t image_width, const char* waves)
 {
     Window::window_->load_view(sender, view_info, waves, "image");
     int image_height = create_pixels(image_width);

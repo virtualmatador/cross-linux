@@ -127,7 +127,7 @@ void Window::post_restart_message()
     need_restart_();
 }
 
-void Window::post_thread_message(__int32_t receiver, const char* id, const char* command, const char* info)
+void Window::post_thread_message(std::int32_t receiver, const char* id, const char* command, const char* info)
 {
     post_message_lock_.lock();
     post_message_queue_.push({receiver, id, command, info});
@@ -135,7 +135,7 @@ void Window::post_thread_message(__int32_t receiver, const char* id, const char*
     post_message_();
 }
 
-void Window::load_view(const __int32_t sender, const __int32_t view_info, const char* waves, const char* view_name)
+void Window::load_view(const std::int32_t sender, const std::int32_t view_info, const char* waves, const char* view_name)
 {
     sender_ = sender;
     container_.set_visible_child(view_name);
@@ -167,7 +167,7 @@ void Window::load_view(const __int32_t sender, const __int32_t view_info, const 
             throw std::runtime_error("No fmt");
         }
         wave_file.read(buffer, sizeof(buffer));
-        if (*(__int32_t*)buffer != 16)
+        if (*(std::int32_t*)buffer != 16)
         {
             throw std::runtime_error("No 16");
         }
@@ -181,12 +181,12 @@ void Window::load_view(const __int32_t sender, const __int32_t view_info, const 
             throw std::runtime_error("No Stereo");
         }
         wave_file.read(buffer, sizeof(buffer));
-        if (*(__int32_t*)buffer != 44100)
+        if (*(std::int32_t*)buffer != 44100)
         {
             throw std::runtime_error("No 44100");
         }
         wave_file.read(buffer, sizeof(buffer));
-        if (*(__int32_t*)buffer != 176400)
+        if (*(std::int32_t*)buffer != 176400)
         {
             throw std::runtime_error("No 176400");
         }
@@ -205,13 +205,13 @@ void Window::load_view(const __int32_t sender, const __int32_t view_info, const 
             throw std::runtime_error("No data");
         }
         wave_file.read(buffer, sizeof(buffer));
-        std::vector<char> data(*(__int32_t*)buffer);
+        std::vector<char> data(*(std::int32_t*)buffer);
         wave_file.read(data.data(), data.size());
         waves_.emplace_back(std::move(data));
     }
 }
 
-void Window::play_audio(const __int32_t index)
+void Window::play_audio(const std::int32_t index)
 {
     SoundIoOutStream* outstream = soundio_outstream_create(sound_device_);
     if (!outstream)

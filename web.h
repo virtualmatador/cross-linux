@@ -16,8 +16,8 @@
 
 struct LoadWebViewDispatch
 {
-    const __int32_t sender;
-    const __int32_t view_info;
+    const std::int32_t sender;
+    const std::int32_t view_info;
     const char* html;
     const char* waves;
 };
@@ -27,12 +27,12 @@ class WebWidget : public std::reference_wrapper<WebKitWebView>
 public:
     WebWidget();
     ~WebWidget();
-    void push_load(const __int32_t sender, const __int32_t view_info,
+    void push_load(const std::int32_t sender, const std::int32_t view_info,
         const char* html, const char* waves);
     void evaluate(const char* function);
 
 private:
-    void on_load(const __int32_t sender, const __int32_t view_info,
+    void on_load(const std::int32_t sender, const std::int32_t view_info,
         const char* html, const char* waves);
     void pop_load();
 

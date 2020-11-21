@@ -44,8 +44,10 @@ bool ImageWidget::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 {
     auto allocation = get_allocation();
     cr->scale((double)allocation.get_width() / (double)pixels_->get_width(), (double)allocation.get_height() / (double)pixels_->get_height());
+    pixels_lock_.lock();
     Gdk::Cairo::set_source_pixbuf(cr, pixels_);
     cr->paint();
+    pixels_lock_.unlock();
     return true;
 }
 
@@ -89,7 +91,13 @@ bool ImageWidget::on_configure_event(GdkEventConfigure* configure_event)
 
 std::uint32_t* ImageWidget::get_pixels()
 {
+    pixels_lock_.lock();
     return (std::uint32_t*) pixels_->get_pixels();
+}
+
+void ImageWidget::release_pixels(std::uint32_t*)
+{
+    pixels_lock_.unlock();
 }
 
 void ImageWidget::refresh_image_view()

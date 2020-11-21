@@ -37,6 +37,7 @@ std::uint32_t* bridge::GetPixels()
 
 void bridge::ReleasePixels(std::uint32_t* const pixels)
 {
+    Window::window_->image_view_.release_pixels(pixels);
 }
 
 void bridge::RefreshImageView()

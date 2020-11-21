@@ -30,6 +30,7 @@ public:
     void push_load(const std::int32_t sender, const std::int32_t view_info,
         const std::int32_t image_width, const char* waves);
     std::uint32_t* get_pixels();
+    void release_pixels(std::uint32_t*);
     void refresh_image_view();
     void reset_pixels();
 
@@ -48,6 +49,7 @@ private:
 
 private:
     Glib::RefPtr<Gdk::Pixbuf> pixels_;
+    std::mutex pixels_lock_;
     int image_view_width_;
     int image_view_height_;
     bool image_resized_;

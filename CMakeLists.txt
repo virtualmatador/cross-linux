@@ -17,11 +17,11 @@ set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_BINARY_DIR}/icon/app.ico")
 
 find_package(PkgConfig)
 
-pkg_check_modules(GTKMM gtkmm-3.0)
+pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
 link_directories(${GTKMM_LIBRARY_DIRS})
 include_directories(${GTKMM_INCLUDE_DIRS})
 
-pkg_check_modules(WEBKIT2GTK webkit2gtk-4.0)
+pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.0)
 link_directories(${WEBKIT2GTK_LIBRARY_DIRS})
 include_directories(${WEBKIT2GTK_INCLUDE_DIRS})
 

@@ -26,6 +26,7 @@ link_directories(${WEBKIT2GTK_LIBRARY_DIRS})
 include_directories(${WEBKIT2GTK_INCLUDE_DIRS})
 
 add_compile_definitions(PROJECT_NAME="${CMAKE_PROJECT_NAME}")
+add_compile_definitions(PROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
 add_compile_definitions(APPLICATION_ID="${CPACK_PACKAGE_VENDOR}")
 
 add_executable("${CMAKE_PROJECT_NAME}")

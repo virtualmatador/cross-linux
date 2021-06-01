@@ -6,15 +6,30 @@
 //  Copyright © 2020 Shaidin. All rights reserved.
 //
 
+#include <cstring>
+#include <iostream>
+
 #include <gtkmm.h>
 
 #include "window.h"
 
-int main()
+int main(int argc, const char* argv[])
 {
-    auto app = Gtk::Application::create(APPLICATION_ID);
-    Window window;
-    window.maximize();
-    window.set_title(PROJECT_NAME);
-    return app->run(window);
+    if (argc > 1)
+    {
+        if (argc == 2 && std::strcmp("--version", argv[1]) == 0)
+        {
+            std::cout << PROJECT_NAME << " " << PROJECT_VERSION << std::endl;
+            return 0;
+        }
+        std::cerr << "Unknown option" << std::endl;
+    }
+    else
+    {
+        auto app = Gtk::Application::create(APPLICATION_ID);
+        Window window;
+        window.maximize();
+        window.set_title(PROJECT_NAME);
+        return app->run(window);
+    }
 }

@@ -2,12 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_testing()
 
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../manifest.txt" manifest)
-foreach(key_value ${manifest})
-    string(REGEX MATCH "^[^=]+" key ${key_value})
-    string(REPLACE "${key}=" "" value ${key_value})
-    set("cross_${key}" "${value}")
-endforeach()
+include("${CMAKE_CURRENT_SOURCE_DIR}/../core/manifest.cmake")
 
 string(TOLOWER ${cross_target} project_name)
 project(${project_name} VERSION ${cross_version})

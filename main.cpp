@@ -22,7 +22,11 @@ int main(int argc, const char* argv[])
             std::cout << PROJECT_NAME << " " << PROJECT_VERSION << std::endl;
             return 0;
         }
-        std::cerr << "Unknown option" << std::endl;
+        else
+        {
+            std::cerr << "Unknown option" << std::endl;
+            return -1;
+        }
     }
     else
     {

@@ -42,6 +42,7 @@ endif()
 
 target_link_libraries("${CMAKE_PROJECT_NAME}"
     ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} soundio pthread stdc++fs)
+target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE -no-pie)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(CPACK_GENERATOR "DEB")

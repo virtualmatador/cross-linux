@@ -70,7 +70,8 @@ void sound_callback(struct SoundIoOutStream *outstream,
 }
 
 Window::Window()
-    : sender_{ 0 }
+    : started_{ false }
+    , sender_{ 0 }
     , soundio_{ nullptr }
     , sound_device_{ nullptr }
 {
@@ -86,9 +87,6 @@ Window::Window()
     container_.set_visible_child("image");
     add(container_);
     container_.show();
-    interface::Begin();
-    interface::Create();
-    interface::Start();
     destroy_stream_dispatcher_.connect(sigc::mem_fun(*this, &Window::pop_audio_destroy));
     soundio_ = soundio_create();
     if (!soundio_)
@@ -110,12 +108,51 @@ Window::Window()
     {
         throw std::runtime_error("soundio_get_output_device");
     }
+    signal_window_state_event().connect([this](GdkEventWindowState *state){
+        if (state->changed_mask & GdkWindowState::GDK_WINDOW_STATE_ICONIFIED)
+        {
+            if (state->new_window_state & GdkWindowState::GDK_WINDOW_STATE_ICONIFIED)
+            {
+                if (started_)
+                {
+                    started_ = false;
+                    interface::Stop();
+                }
+            }
+            else
+            {
+                if (!started_)
+                {
+                    started_ = true;
+                    interface::Start();
+                }
+            }
+        }
+        return true;
+    });
+    signal_show().connect([this]()
+    {
+        interface::Create();
+        if (!started_)
+        {
+            started_ = true;
+            interface::Start();
+        }
+    });
+    signal_hide().connect([this]()
+    {
+        if (started_)
+        {
+            started_ = false;
+            interface::Stop();
+        }
+        interface::Destroy();
+    });
+    interface::Begin();
 }
 
 Window::~Window()
 {
-    interface::Stop();
-    interface::Destroy();
     interface::End();
     clear_tracks();
     soundio_device_unref(sound_device_);

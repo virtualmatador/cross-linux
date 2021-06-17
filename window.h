@@ -65,6 +65,7 @@ private:
     void on_post_message();
 
 public:
+    bool started_;
     Gtk::Stack container_;
     WebWidget web_view_;
     ImageWidget image_view_;

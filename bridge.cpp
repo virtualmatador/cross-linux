@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <fstream>
 
-#include "../core/src/bridge.h"
+#include "extern/core/src/bridge.h"
 
 #include "window.h"
 

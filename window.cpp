@@ -18,8 +18,8 @@
 #include <Windows.h>
 #endif
 
-#include "../core/src/bridge.h"
-#include "../core/src/interface.h"
+#include "extern/core/src/bridge.h"
+#include "extern/core/src/interface.h"
 
 #include "window.h"
 

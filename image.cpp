@@ -6,7 +6,7 @@
 //  Copyright © 2020 Shaidin. All rights reserved.
 //
 
-#include "../core/src/interface.h"
+#include "extern/core/src/interface.h"
 
 #include "window.h"
 

@@ -9,7 +9,7 @@
 #include <string>
 #include <sstream>
 
-#include "../core/src/interface.h"
+#include "extern/core/src/interface.h"
 
 #include "window.h"
 

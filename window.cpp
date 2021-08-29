@@ -398,7 +398,7 @@ void Window::set_paths()
     {
         config_path_ = ".";
     }
-    config_path_.append(".sanke");
+    config_path_.append(PROJECT_NAME);
     config_path_.append("config");
     std::filesystem::create_directories(config_path_);
 }

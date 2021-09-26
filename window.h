@@ -49,11 +49,10 @@ public:
     Window();
     ~Window();
     void post_restart_message();
-    void post_thread_message(std::int32_t receiver, const char* id, const char* command, const char* info);
-    void load_view(const std::int32_t sender, const std::int32_t view_info, const char* waves, const char* view_name);
-    void play_audio(const std::int32_t index);
-    void push_audio_destroy(SoundIoOutStream* outstream, bool callback);
-    void pop_audio_destroy();
+    void async_message(std::int32_t receiver, const char* id,
+        const char* command, const char* info);
+    void load_view(const std::int32_t sender, const std::int32_t view_info,
+        const char* view_name);
 
 private:
     bool handle_key(GdkEventKey* event);
@@ -78,13 +77,6 @@ private:
     std::mutex post_message_lock_;
     Glib::Dispatcher post_message_;
     std::queue<PostMessageDispatch> post_message_queue_;
-    SoundIo* soundio_;
-    SoundIoDevice* sound_device_;
-    std::vector<std::vector<char>> waves_;
-    std::list<SoundIoOutStream*> tracks_;
-    std::mutex destroy_stream_lock_;
-    Glib::Dispatcher destroy_stream_dispatcher_;
-    std::queue<SoundIoOutStream*> destroy_stream_queue_;
 };
 
 #endif // DESKTOP_WINDOW_H

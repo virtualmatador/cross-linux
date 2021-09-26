@@ -33,28 +33,17 @@ file(GLOB core_sources "extern/core/src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${core_sources})
 file(GLOB main_sources "../../src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${main_sources})
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_link_options("${CMAKE_PROJECT_NAME}" BEFORE PRIVATE
-        "-Wl,-subsystem,windows")
-    target_link_options("${CMAKE_PROJECT_NAME}" BEFORE PRIVATE
-        -static-libstdc++ -static-libgcc)
-    target_link_libraries("${CMAKE_PROJECT_NAME}" mingw32 win_resource)
-endif()
 
 target_link_libraries("${CMAKE_PROJECT_NAME}"
-    ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} soundio pthread stdc++fs)
+    ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} pthread stdc++fs)
 target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE -no-pie)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(CPACK_GENERATOR "DEB")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_VENDOR})
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-3-0,libwebkit2gtk-4.0-37,libsoundio1")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-3-0,libwebkit2gtk-4.0-37")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CPACK_GENERATOR "XCODE")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(CPACK_GENERATOR "NSIS")
-    set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_VENDOR}\\\\${CMAKE_PROJECT_NAME}")
-    set(CPACK_NSIS_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
 endif()
 
 include(CPack)

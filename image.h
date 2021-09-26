@@ -19,7 +19,6 @@ struct LoadImageViewDispatch
     const std::int32_t sender;
     const std::int32_t view_info;
     const std::int32_t image_width;
-    const char* waves;
 };
 
 class ImageWidget : public Gtk::DrawingArea
@@ -28,7 +27,7 @@ public:
     ImageWidget();
     ~ImageWidget();
     void push_load(const std::int32_t sender, const std::int32_t view_info,
-        const std::int32_t image_width, const char* waves);
+        const std::int32_t image_width);
     std::uint32_t* get_pixels();
     void release_pixels(std::uint32_t*);
     void refresh_image_view();
@@ -43,7 +42,7 @@ private:
 
 private:
     void on_load(const std::int32_t sender, const std::int32_t view_info,
-        const std::int32_t image_width, const char* waves);
+        const std::int32_t image_width);
     void pop_load();
     int create_pixels(int image_width);
 

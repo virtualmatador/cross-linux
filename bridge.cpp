@@ -18,43 +18,15 @@ void bridge::NeedRestart()
     Window::window_->post_restart_message();
 }
 
-void bridge::LoadWebView(const std::int32_t sender,
+void bridge::LoadView(const std::int32_t sender,
     const std::int32_t view_info, const char* html)
 {
     Window::window_->web_view_.push_load(sender, view_info, html);
 }
 
-void bridge::LoadImageView(const std::int32_t sender,
-    const std::int32_t view_info, const std::int32_t image_width)
-{
-    Window::window_->image_view_.push_load(sender, view_info, image_width);
-}
-
-std::uint32_t* bridge::GetPixels()
-{
-    return Window::window_->image_view_.get_pixels();
-}
-
-void bridge::ReleasePixels(std::uint32_t* const pixels)
-{
-    Window::window_->image_view_.release_pixels(pixels);
-}
-
-void bridge::RefreshImageView()
-{
-    Window::window_->image_view_.refresh_image_view();
-}
-
 void bridge::CallFunction(const char* function)
 {
     Window::window_->web_view_.evaluate(function);
-}
-
-std::string bridge::GetAsset(const char* key)
-{
-    std::ifstream asset(key);
-    return { std::istreambuf_iterator<char>(asset),
-        std::istreambuf_iterator<char>() };
 }
 
 std::string bridge::GetPreference(const char* key)

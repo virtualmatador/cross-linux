@@ -11,12 +11,7 @@
 #include <sstream>
 #include <string_view>
 
-#if defined(__APPLE__) || defined(__linux__)
 #include <pwd.h>
-#endif
-#if defined(_WIN32)
-#include <Windows.h>
-#endif
 
 #include "extern/core/src/bridge.h"
 #include "extern/core/src/cross.h"
@@ -35,12 +30,8 @@ Window::Window()
     signal_key_release_event().connect(sigc::mem_fun(*this, &Window::handle_key));
     need_restart_.connect(sigc::mem_fun(*this, &Window::on_need_restart));
     post_message_.connect(sigc::mem_fun(*this, &Window::on_post_message));
-    container_.add(*web_view_.web_widget_, "web");
-    container_.set_visible_child("web");
-    container_.add(image_view_, "image");
-    container_.set_visible_child("image");
-    add(container_);
-    container_.show();
+    add(*web_view_.web_widget_);
+    web_view_.web_widget_->show();
     signal_window_state_event().connect([this](GdkEventWindowState *state){
         if (state->changed_mask & GdkWindowState::GDK_WINDOW_STATE_ICONIFIED)
         {
@@ -101,13 +92,6 @@ void Window::async_message(std::int32_t receiver,
     post_message_queue_.push({receiver, id, command, info});
     post_message_lock_.unlock();
     post_message_();
-}
-
-void Window::load_view(const std::int32_t sender, const std::int32_t view_info,
-    const char* view_name)
-{
-    sender_ = sender;
-    container_.set_visible_child(view_name);
 }
 
 bool Window::handle_key(GdkEventKey *event)

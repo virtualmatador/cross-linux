@@ -108,16 +108,7 @@ void WebWidget::pop_load()
 void WebWidget::on_load(const std::int32_t sender, const std::int32_t view_info,
     const char* html)
 {
-    Window::window_->load_view(sender, view_info, "web");
-    Window::window_->image_view_.reset_pixels();
-
-    // @Override public boolean shouldOverrideUrlLoading(WebView view,
-    //  WebResourceRequest request)
-    // {
-    //     Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
-    //     view.getContext().startActivity(intent);
-    //     return true;
-    // }
+    Window::window_->sender_ = sender;
     g_signal_connect(&get(), "load-changed", GCallback(web_view_load_changed),
         reinterpret_cast<void*>(sender));
     std::string path = "file://" + (Window::window_->assets_path_ / "assets" /

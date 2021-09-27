@@ -22,7 +22,6 @@
 #include <soundio/soundio.h>
 
 #include "web.h"
-#include "image.h"
 
 struct PostMessageDispatch
 {
@@ -51,8 +50,6 @@ public:
     void post_restart_message();
     void async_message(std::int32_t receiver, const char* id,
         const char* command, const char* info);
-    void load_view(const std::int32_t sender, const std::int32_t view_info,
-        const char* view_name);
 
 private:
     bool handle_key(GdkEventKey* event);
@@ -65,9 +62,7 @@ private:
 
 public:
     bool started_;
-    Gtk::Stack container_;
     WebWidget web_view_;
-    ImageWidget image_view_;
     std::filesystem::path assets_path_;
     std::filesystem::path config_path_;
     std::int32_t sender_;

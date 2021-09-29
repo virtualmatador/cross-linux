@@ -6,6 +6,7 @@
 //  Copyright © 2020 Shaidin. All rights reserved.
 //
 
+#include <cstring>
 #include <string>
 #include <sstream>
 
@@ -14,6 +15,45 @@
 #include "window.h"
 
 #include "web.h"
+
+void WebKitURISchemeRequestedCross(
+    WebKitURISchemeRequest *request, gpointer user_data)
+{
+    void* data = nullptr;
+    std::size_t size = 0;
+    cross::FeedUri(webkit_uri_scheme_request_get_uri(request),
+    [&](const std::vector<unsigned char>& input)
+    {
+        size = input.size();
+        data = new unsigned char[size];
+        std::memcpy(data, input.data(), size);
+    });
+    if (data)
+    {
+        auto base_stream = g_memory_input_stream_new_from_data(
+            data, size, [](gpointer data){ delete[] (unsigned char*)data; });
+        webkit_uri_scheme_request_finish(request, base_stream, size, nullptr);
+        g_object_unref(base_stream);
+    }
+    else
+    {
+        GError* er = g_error_new(0, 0, "no data");
+        webkit_uri_scheme_request_finish_error(request, er);
+    }
+}
+
+void WebKitURISchemeRequestedAsset(
+    WebKitURISchemeRequest *request, gpointer user_data)
+{
+    auto path =
+        Window::window_->assets_path_ / "assets" /
+        (webkit_uri_scheme_request_get_uri(request) + sizeof("asset://") - 1);
+    GFile *file = g_file_new_for_path(path.string().c_str());
+    GFileInputStream *stream = g_file_read(file, NULL, NULL);
+    g_object_unref(file);
+    webkit_uri_scheme_request_finish(request, (GInputStream*)stream, -1, NULL);
+    g_object_unref(stream);
+}
 
 void web_view_script_message_received(WebKitUserContentManager* manager,
     WebKitJavascriptResult* js_result, gpointer user_data)
@@ -55,7 +95,12 @@ void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event,
             "{"
             "    Handler.postMessage(Handler_Receiver.toString() "
                     "+ \" \" + id + \" \" + command + \" \" + info);"
-            "}";
+            "}"
+            "var cross_asset_domain_ = 'asset://';"
+            "var cross_asset_async_ = false;"
+            "var cross_pointer_type_ = 'mouse';"
+            "var cross_pointer_upsidedown_ = false;"
+            ;
         webkit_web_view_run_javascript(web_view, os.str().c_str(), nullptr,
             web_view_run_javascript_finished, (void*)0x01);
     }
@@ -72,6 +117,10 @@ WebWidget::WebWidget()
         G_CALLBACK(web_view_script_message_received), nullptr);
     webkit_user_content_manager_register_script_message_handler(
         manager, "Handler_");
+    webkit_web_context_register_uri_scheme(webkit_web_context_get_default(),
+        "cross", WebKitURISchemeRequestedCross, nullptr, nullptr);
+    webkit_web_context_register_uri_scheme(webkit_web_context_get_default(),
+        "asset", WebKitURISchemeRequestedAsset, nullptr, nullptr);
     web_widget_ = Glib::wrap((GtkWidget*)&get());
     web_widget_->show();
 }

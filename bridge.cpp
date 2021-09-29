@@ -75,6 +75,23 @@ void bridge::PostHttp(const std::int32_t sender,
     // env_->DeleteLocalRef(jUrl);
 }
 
+void bridge::CreateImage(const char* id, const char* parent)
+{
+    std::ostringstream js;
+    js <<
+        "var img = document.createElement('img');"
+        "img.setAttribute('id', '" << id << "');"
+        "document.getElementById('" << parent << "').appendChild(img);";
+    bridge::CallFunction(js.str().c_str());
+}
+
+void bridge::ResetImage(const std::int32_t sender, const std::int32_t index, const char* id)
+{
+    std::ostringstream js;
+    js << "resetImage(" << sender << "," << index << ",'" << id << "');";
+    bridge::CallFunction(js.str().c_str());
+}
+
 void bridge::Exit()
 {
     Window::window_->close();

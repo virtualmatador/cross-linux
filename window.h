@@ -19,8 +19,6 @@
 
 #include <gtkmm.h>
 
-#include <soundio/soundio.h>
-
 #include "web.h"
 
 struct PostMessageDispatch
@@ -29,14 +27,6 @@ struct PostMessageDispatch
     const char* id;
     const char* command;
     const char* info;
-};
-
-struct PlayBackInfo
-{
-    const std::vector<char>* data;
-    std::list<SoundIoOutStream*>::iterator it;
-    std::size_t progress;
-    bool done;
 };
 
 class Window: public Gtk::Window

@@ -25,8 +25,11 @@ add_compile_definitions(PROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
 add_compile_definitions(APPLICATION_ID="${CPACK_PACKAGE_VENDOR}")
 
 add_executable("${CMAKE_PROJECT_NAME}")
+set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES
+    CXX_STANDARD 17
+    RUNTIME_OUTPUT_DIRECTORY "bin"
+)
 target_include_directories("${CMAKE_PROJECT_NAME}" PRIVATE "extern/core/src")
-set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 file(GLOB sources "./*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${sources})
 file(GLOB core_sources "extern/core/src/*.cpp")
@@ -46,6 +49,13 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CPACK_GENERATOR "XCODE")
 endif()
 
+add_custom_target("assets" ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/share/${CMAKE_PROJECT_NAME}/assets")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/share/${CMAKE_PROJECT_NAME}/assets"
+    COMMAND mkdir -p share/${CMAKE_PROJECT_NAME}
+    COMMAND ln -sf ../../../assets share/${CMAKE_PROJECT_NAME}/
+)
+add_dependencies("${CMAKE_PROJECT_NAME}" "assets")
+
 include(CPack)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -63,6 +73,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 install(TARGETS "${CMAKE_PROJECT_NAME}" DESTINATION "bin")
-install(DIRECTORY "../../assets" DESTINATION "share/${CMAKE_PROJECT_NAME}")
+
+get_filename_component(assets_dir "${CMAKE_CURRENT_BINARY_DIR}/share/${CMAKE_PROJECT_NAME}/assets/" REALPATH)
+install(DIRECTORY "${assets_dir}" DESTINATION "share/${CMAKE_PROJECT_NAME}/")
 
 add_subdirectory("icon")

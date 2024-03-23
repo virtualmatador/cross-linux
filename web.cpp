@@ -101,7 +101,7 @@ void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event,
             "var cross_pointer_type_ = 'mouse';"
             "var cross_pointer_upsidedown_ = false;"
             ;
-        webkit_web_view_run_javascript(web_view, os.str().c_str(), nullptr,
+        webkit_web_view_evaluate_javascript(web_view, os.str().c_str(), -1, nullptr, nullptr, nullptr,
             web_view_run_javascript_finished, (void*)0x01);
     }
 }
@@ -141,7 +141,7 @@ void WebWidget::push_load(const std::int32_t sender,
 
 void WebWidget::evaluate(const char* function)
 {
-    webkit_web_view_run_javascript(&get(), function, nullptr,
+    webkit_web_view_evaluate_javascript(&get(), function, -1, nullptr, nullptr, nullptr,
         web_view_run_javascript_finished, nullptr);
 }
 

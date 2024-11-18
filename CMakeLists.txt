@@ -16,7 +16,7 @@ pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
 link_directories(${GTKMM_LIBRARY_DIRS})
 include_directories(${GTKMM_INCLUDE_DIRS})
 
-pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.0)
+pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.1)
 link_directories(${WEBKIT2GTK_LIBRARY_DIRS})
 include_directories(${WEBKIT2GTK_INCLUDE_DIRS})
 

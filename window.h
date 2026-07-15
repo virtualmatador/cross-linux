@@ -42,7 +42,8 @@ public:
         const char* command, const char* info);
 
 private:
-    bool handle_key(GdkEventKey* event);
+    void handle_key(guint keyval, guint keycode, Gdk::ModifierType state);
+    void handle_active_changed();
 
 private:
     void set_paths();

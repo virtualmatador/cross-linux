@@ -25,35 +25,18 @@ Window::Window()
     , sender_{ 0 }
 {
     window_ = this;
+    set_title(PROJECT_NAME);
+    maximize();
     set_paths();
-    add_events(Gdk::KEY_PRESS_MASK);
-    signal_key_release_event().connect(sigc::mem_fun(*this, &Window::handle_key));
+    auto key_controller = Gtk::EventControllerKey::create();
+    key_controller->signal_key_released().connect(
+        sigc::mem_fun(*this, &Window::handle_key));
+    add_controller(key_controller);
     need_restart_.connect(sigc::mem_fun(*this, &Window::on_need_restart));
     post_message_.connect(sigc::mem_fun(*this, &Window::on_post_message));
-    add(*web_view_.web_widget_);
-    web_view_.web_widget_->show();
-    signal_window_state_event().connect([this](GdkEventWindowState *state){
-        if (state->changed_mask & GdkWindowState::GDK_WINDOW_STATE_ICONIFIED)
-        {
-            if (state->new_window_state & GdkWindowState::GDK_WINDOW_STATE_ICONIFIED)
-            {
-                if (started_)
-                {
-                    started_ = false;
-                    cross::Stop();
-                }
-            }
-            else
-            {
-                if (!started_)
-                {
-                    started_ = true;
-                    cross::Start();
-                }
-            }
-        }
-        return true;
-    });
+    set_child(*web_view_.web_widget_);
+    property_is_active().signal_changed().connect(
+        sigc::mem_fun(*this, &Window::handle_active_changed));
     signal_show().connect([this]()
     {
         cross::Create();
@@ -94,15 +77,27 @@ void Window::async_message(std::int32_t receiver,
     post_message_();
 }
 
-bool Window::handle_key(GdkEventKey *event)
+void Window::handle_key(guint keyval, guint, Gdk::ModifierType)
 {
-    if (event->keyval == GDK_KEY_Escape)
+    if (keyval == GDK_KEY_Escape)
     {
         cross::Escape();
-        return false;
     }
-    return true;
-};
+}
+
+void Window::handle_active_changed()
+{
+    if (is_active() && !started_)
+    {
+        started_ = true;
+        cross::Start();
+    }
+    else if (!is_active() && started_)
+    {
+        started_ = false;
+        cross::Stop();
+    }
+}
 
 void Window::set_paths()
 {

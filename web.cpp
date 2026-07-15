@@ -49,17 +49,37 @@ void WebKitURISchemeRequestedAsset(
         Window::window_->assets_path_ / "assets" /
         (webkit_uri_scheme_request_get_uri(request) + sizeof("asset://") - 1);
     GFile *file = g_file_new_for_path(path.string().c_str());
-    GFileInputStream *stream = g_file_read(file, NULL, NULL);
+    GError *error = nullptr;
+    GFileInputStream *stream = g_file_read(file, nullptr, &error);
     g_object_unref(file);
-    webkit_uri_scheme_request_finish(request, (GInputStream*)stream, -1, NULL);
+
+    if (!stream)
+    {
+        webkit_uri_scheme_request_finish_error(request, error);
+        g_error_free(error);
+        return;
+    }
+
+    auto response = webkit_uri_scheme_response_new(
+        G_INPUT_STREAM(stream), -1);
+    webkit_uri_scheme_response_set_status(response, 200, nullptr);
+    webkit_uri_scheme_response_set_content_type(response, "audio/wav");
+
+    auto headers = soup_message_headers_new(SOUP_MESSAGE_HEADERS_RESPONSE);
+    soup_message_headers_append(headers, "Access-Control-Allow-Origin", "*");
+    webkit_uri_scheme_response_set_http_headers(response, headers);
+
+    webkit_uri_scheme_request_finish_with_response(request, response);
+    g_object_unref(response);
     g_object_unref(stream);
 }
 
 void web_view_script_message_received(WebKitUserContentManager* manager,
-    WebKitJavascriptResult* js_result, gpointer user_data)
+    JSCValue* value, gpointer user_data)
 {
-    auto value = webkit_javascript_result_get_js_value(js_result);
-    std::istringstream is{ std::string(jsc_value_to_string(value)) };
+    auto message = jsc_value_to_string(value);
+    std::istringstream is{ std::string(message) };
+    g_free(message);
     std::int32_t sender;
     std::string id, command, info;
     is >> sender;
@@ -68,7 +88,6 @@ void web_view_script_message_received(WebKitUserContentManager* manager,
     is.ignore(1);
     std::getline(is, info);
     cross::HandleAsync(sender, id.c_str(), command.c_str(), info.c_str());
-    webkit_javascript_result_unref(js_result);
 }
 
 void web_view_run_javascript_finished(GObject* sourceObject, GAsyncResult* res,
@@ -116,13 +135,12 @@ WebWidget::WebWidget()
     g_signal_connect(manager, "script-message-received::Handler_",
         G_CALLBACK(web_view_script_message_received), nullptr);
     webkit_user_content_manager_register_script_message_handler(
-        manager, "Handler_");
+        manager, "Handler_", nullptr);
     webkit_web_context_register_uri_scheme(webkit_web_context_get_default(),
         "cross", WebKitURISchemeRequestedCross, nullptr, nullptr);
     webkit_web_context_register_uri_scheme(webkit_web_context_get_default(),
         "asset", WebKitURISchemeRequestedAsset, nullptr, nullptr);
     web_widget_ = Glib::wrap((GtkWidget*)&get());
-    web_widget_->show();
 }
 
 WebWidget::~WebWidget()

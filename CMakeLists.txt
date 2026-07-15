@@ -12,11 +12,11 @@ set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_BINARY_DIR}/icon/app.ico")
 
 find_package(PkgConfig)
 
-pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
+pkg_check_modules(GTKMM REQUIRED gtkmm-4.0)
 link_directories(${GTKMM_LIBRARY_DIRS})
 include_directories(${GTKMM_INCLUDE_DIRS})
 
-pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.1)
+pkg_check_modules(WEBKIT2GTK REQUIRED webkitgtk-6.0)
 link_directories(${WEBKIT2GTK_LIBRARY_DIRS})
 include_directories(${WEBKIT2GTK_INCLUDE_DIRS})
 
@@ -44,7 +44,7 @@ target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE -no-pie)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(CPACK_GENERATOR "DEB")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_VENDOR})
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-3-0,libwebkit2gtk-4.1-0")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-4-0,libwebkitgtk-6.0-4")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CPACK_GENERATOR "XCODE")
 endif()

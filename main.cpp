@@ -13,7 +13,7 @@
 
 #include "window.h"
 
-int main(int argc, const char* argv[])
+int main(int argc, char* argv[])
 {
     if (argc > 1)
     {
@@ -31,9 +31,6 @@ int main(int argc, const char* argv[])
     else
     {
         auto app = Gtk::Application::create(APPLICATION_ID);
-        Window window;
-        window.maximize();
-        window.set_title(PROJECT_NAME);
-        return app->run(window);
+        return app->make_window_and_run<Window>(argc, argv);
     }
 }

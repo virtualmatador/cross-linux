@@ -12,7 +12,7 @@
 #include <mutex>
 #include <queue>
 
-#include <webkit2/webkit2.h>
+#include <webkit/webkit.h>
 
 struct LoadWebViewDispatch
 {

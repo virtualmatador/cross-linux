@@ -41,13 +41,10 @@ target_link_libraries("${CMAKE_PROJECT_NAME}"
     ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} pthread stdc++fs)
 target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE -no-pie)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_VENDOR})
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-4-0,libwebkitgtk-6.0-4")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(CPACK_GENERATOR "XCODE")
-endif()
+set(CPACK_GENERATOR "DEB")
+set(CPACK_DEBIAN_PACKAGE_RELEASE "${BUILD_NUMBER}")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_VENDOR})
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-4-0,libwebkitgtk-6.0-4")
 
 add_custom_target("assets" ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/share/${CMAKE_PROJECT_NAME}/assets")
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/share/${CMAKE_PROJECT_NAME}/assets"
@@ -58,19 +55,17 @@ add_dependencies("${CMAKE_PROJECT_NAME}" "assets")
 
 include(CPack)
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_custom_target("desktop" ALL DEPENDS "${CMAKE_PROJECT_NAME}.desktop")
-    add_custom_command(OUTPUT "${CMAKE_PROJECT_NAME}.desktop"
-        COMMAND ${CMAKE_COMMAND} -E echo [Desktop Entry] > "${CMAKE_PROJECT_NAME}.desktop"
-        COMMAND ${CMAKE_COMMAND} -E echo Name=${cross_target} >> "${CMAKE_PROJECT_NAME}.desktop"
-        COMMAND ${CMAKE_COMMAND} -E echo Exec=${CMAKE_PROJECT_NAME} >> "${CMAKE_PROJECT_NAME}.desktop"
-        COMMAND ${CMAKE_COMMAND} -E echo Icon=${CMAKE_PROJECT_NAME} >> "${CMAKE_PROJECT_NAME}.desktop"
-        COMMAND ${CMAKE_COMMAND} -E echo Type=Application >> "${CMAKE_PROJECT_NAME}.desktop"
-        COMMAND ${CMAKE_COMMAND} -E echo Categories=Utility >> "${CMAKE_PROJECT_NAME}.desktop"
-        COMMAND ${CMAKE_COMMAND} -E echo Terminal=false >> "${CMAKE_PROJECT_NAME}.desktop"
-    )
-	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.desktop" DESTINATION "share/applications")
-endif()
+add_custom_target("desktop" ALL DEPENDS "${CMAKE_PROJECT_NAME}.desktop")
+add_custom_command(OUTPUT "${CMAKE_PROJECT_NAME}.desktop"
+    COMMAND ${CMAKE_COMMAND} -E echo [Desktop Entry] > "${CMAKE_PROJECT_NAME}.desktop"
+    COMMAND ${CMAKE_COMMAND} -E echo Name=${cross_target} >> "${CMAKE_PROJECT_NAME}.desktop"
+    COMMAND ${CMAKE_COMMAND} -E echo Exec=${CMAKE_PROJECT_NAME} >> "${CMAKE_PROJECT_NAME}.desktop"
+    COMMAND ${CMAKE_COMMAND} -E echo Icon=${CMAKE_PROJECT_NAME} >> "${CMAKE_PROJECT_NAME}.desktop"
+    COMMAND ${CMAKE_COMMAND} -E echo Type=Application >> "${CMAKE_PROJECT_NAME}.desktop"
+    COMMAND ${CMAKE_COMMAND} -E echo Categories=Utility >> "${CMAKE_PROJECT_NAME}.desktop"
+    COMMAND ${CMAKE_COMMAND} -E echo Terminal=false >> "${CMAKE_PROJECT_NAME}.desktop"
+)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.desktop" DESTINATION "share/applications")
 
 install(TARGETS "${CMAKE_PROJECT_NAME}" DESTINATION "bin")
 

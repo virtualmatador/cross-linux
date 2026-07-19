@@ -17,7 +17,4 @@ add_custom_target("app_icon" ALL DEPENDS "app.ico")
 add_custom_command(OUTPUT "app.ico"
     COMMAND convert ${png_files} "app.ico" 
     DEPENDS ${png_targets})
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${BASE_DIR}" DESTINATION "share/icons")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-endif()
+install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${BASE_DIR}" DESTINATION "share/icons")

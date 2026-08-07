@@ -18,10 +18,21 @@ void bridge::NeedRestart()
     Window::window_->post_restart_message();
 }
 
-void bridge::LoadView(const std::int32_t sender,
-    const std::int32_t view_info, const char* html)
+void bridge::LoadView(const std::int32_t sender, const char* html)
 {
-    Window::window_->web_view_.push_load(sender, view_info, html);
+    Window::window_->web_view_.push_load(sender, html);
+}
+
+void bridge::SetScreenOn(bool)
+{
+}
+
+void bridge::SetAudioNoSolo(bool)
+{
+}
+
+void bridge::SetLayout(bool, bool)
+{
 }
 
 void bridge::CallFunction(const char* function)

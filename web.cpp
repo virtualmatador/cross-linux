@@ -148,11 +148,10 @@ WebWidget::~WebWidget()
     Glib::unwrap(web_widget_);
 }
 
-void WebWidget::push_load(const std::int32_t sender,
-    const std::int32_t view_info, const char* html)
+void WebWidget::push_load(const std::int32_t sender, const char* html)
 {
     dispatch_lock_.lock();
-    dispatch_queue_.push({ sender, view_info, html });
+    dispatch_queue_.push({ sender, html });
     dispatch_lock_.unlock();
     dispatcher_();
 }
@@ -169,11 +168,10 @@ void WebWidget::pop_load()
     auto dispatch_info = dispatch_queue_.front();
     dispatch_queue_.pop();
     dispatch_lock_.unlock();
-    on_load(dispatch_info.sender, dispatch_info.view_info, dispatch_info.html);
+    on_load(dispatch_info.sender, dispatch_info.html);
 }
 
-void WebWidget::on_load(const std::int32_t sender, const std::int32_t view_info,
-    const char* html)
+void WebWidget::on_load(const std::int32_t sender, const char* html)
 {
     Window::window_->sender_ = sender;
     g_signal_connect(&get(), "load-changed", GCallback(web_view_load_changed),

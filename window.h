@@ -37,7 +37,6 @@ public:
 public:
     Window();
     ~Window();
-    void post_restart_message();
     void async_message(std::int32_t receiver, const char* id,
         const char* command, const char* info);
 
@@ -48,7 +47,6 @@ private:
 private:
     void set_paths();
     void clear_tracks();
-    void on_need_restart();
     void on_post_message();
 
 public:
@@ -56,10 +54,8 @@ public:
     WebWidget web_view_;
     std::filesystem::path assets_path_;
     std::filesystem::path config_path_;
-    std::int32_t sender_;
 
 private:
-    Glib::Dispatcher need_restart_;
     std::mutex post_message_lock_;
     Glib::Dispatcher post_message_;
     std::queue<PostMessageDispatch> post_message_queue_;

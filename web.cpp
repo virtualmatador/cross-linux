@@ -7,8 +7,9 @@
 //
 
 #include <cstring>
-#include <string>
+#include <memory>
 #include <sstream>
+#include <string>
 
 #include "extern/core/src/cross.h"
 
@@ -80,7 +81,7 @@ void web_view_script_message_received(WebKitUserContentManager* manager,
     auto message = jsc_value_to_string(value);
     std::istringstream is{ std::string(message) };
     g_free(message);
-    std::int32_t sender;
+    std::int32_t sender = 0;
     std::string id, command, info;
     is >> sender;
     is >> id;
@@ -90,39 +91,94 @@ void web_view_script_message_received(WebKitUserContentManager* manager,
     cross::HandleAsync(sender, id.c_str(), command.c_str(), info.c_str());
 }
 
-void web_view_run_javascript_finished(GObject* sourceObject, GAsyncResult* res,
-    gpointer userData)
+namespace
 {
-    if (userData == (void*)0x01)
+struct ReadyDispatch
+{
+    std::int32_t receiver;
+    std::string uri;
+};
+
+bool finish_javascript(GObject* source_object, GAsyncResult* result)
+{
+    GError* error = nullptr;
+    auto value = webkit_web_view_evaluate_javascript_finish(
+        WEBKIT_WEB_VIEW(source_object), result, &error);
+    const bool succeeded = value != nullptr;
+    if (value)
+        g_object_unref(value);
+    if (error)
     {
-        cross::HandleAsync(Window::window_->sender_, "body", "ready", "");
+        g_error_free(error);
+        return false;
     }
+    return succeeded;
 }
 
-void web_view_load_changed(WebKitWebView* web_view, WebKitLoadEvent load_event,
+void web_view_javascript_finished(GObject* source_object, GAsyncResult* result,
+    gpointer)
+{
+    finish_javascript(source_object, result);
+}
+
+void web_view_ready_finished(GObject* source_object, GAsyncResult* result,
     gpointer user_data)
 {
-    if (load_event == WEBKIT_LOAD_FINISHED && user_data ==
-        reinterpret_cast<void*>(Window::window_->sender_))
+    std::unique_ptr<ReadyDispatch> dispatch{
+        static_cast<ReadyDispatch*>(user_data)};
+    if (!finish_javascript(source_object, result))
+        return;
+    const auto uri = webkit_web_view_get_uri(WEBKIT_WEB_VIEW(source_object));
+    if (!uri || dispatch->uri != uri)
+        return;
+    cross::HandleAsync(dispatch->receiver, "body", "ready", "");
+}
+} // namespace
+
+void WebWidget::load_changed(WebKitWebView* web_view,
+    WebKitLoadEvent load_event, gpointer user_data)
+{
+    static_cast<WebWidget*>(user_data)->on_load_changed(web_view, load_event);
+}
+
+void WebWidget::on_load_changed(WebKitWebView* web_view,
+    WebKitLoadEvent load_event)
+{
+    const auto uri = webkit_web_view_get_uri(web_view);
+    if (load_event == WEBKIT_LOAD_STARTED)
     {
-        std::ostringstream os;
-        os <<
-            "var Handler = window.webkit.messageHandlers.Handler_;"
-            "var Handler_Receiver = "
-            << Window::window_->sender_ << ";"
-            "function CallHandler(id, command, info)"
-            "{"
-            "    Handler.postMessage(Handler_Receiver.toString() "
-                    "+ \" \" + id + \" \" + command + \" \" + info);"
-            "}"
-            "var cross_asset_domain_ = 'asset://';"
-            "var cross_asset_async_ = false;"
-            "var cross_pointer_type_ = 'mouse';"
-            "var cross_pointer_upsidedown_ = false;"
-            ;
-        webkit_web_view_evaluate_javascript(web_view, os.str().c_str(), -1, nullptr, nullptr, nullptr,
-            web_view_run_javascript_finished, (void*)0x01);
+        if (!uri || uri_ != uri)
+            committed_ = false;
+        return;
     }
+    if (load_event == WEBKIT_LOAD_COMMITTED)
+    {
+        committed_ = uri && uri_ == uri && sender_ > 0 &&
+            sender_ == cross::StageIndex();
+        return;
+    }
+    if (load_event != WEBKIT_LOAD_FINISHED || !committed_ || !uri ||
+        uri_ != uri || sender_ != cross::StageIndex())
+        return;
+
+    std::ostringstream os;
+    os <<
+        "var Handler = window.webkit.messageHandlers.Handler_;"
+        "var Handler_Receiver = "
+        << sender_ << ";"
+        "function CallHandler(id, command, info)"
+        "{"
+        "    Handler.postMessage(Handler_Receiver.toString() "
+                "+ \" \" + id + \" \" + command + \" \" + info);"
+        "}"
+        "var cross_asset_domain_ = 'asset://';"
+        "var cross_asset_async_ = false;"
+        "var cross_pointer_type_ = 'mouse';"
+        "var cross_pointer_upsidedown_ = false;"
+        ;
+    auto dispatch = new ReadyDispatch{sender_, uri_};
+    webkit_web_view_evaluate_javascript(web_view, os.str().c_str(), -1,
+        nullptr, nullptr, nullptr, web_view_ready_finished, dispatch);
 }
 
 WebWidget::WebWidget()
@@ -140,6 +196,8 @@ WebWidget::WebWidget()
         "cross", WebKitURISchemeRequestedCross, nullptr, nullptr);
     webkit_web_context_register_uri_scheme(webkit_web_context_get_default(),
         "asset", WebKitURISchemeRequestedAsset, nullptr, nullptr);
+    g_signal_connect(&get(), "load-changed", G_CALLBACK(WebWidget::load_changed),
+        this);
     web_widget_ = Glib::wrap((GtkWidget*)&get());
 }
 
@@ -150,33 +208,43 @@ WebWidget::~WebWidget()
 
 void WebWidget::push_load(const std::int32_t sender, const char* html)
 {
-    dispatch_lock_.lock();
-    dispatch_queue_.push({ sender, html });
-    dispatch_lock_.unlock();
+    if (!html)
+        return;
+    {
+        std::lock_guard<std::mutex> guard{dispatch_lock_};
+        dispatch_queue_.push({sender, html});
+    }
     dispatcher_();
 }
 
 void WebWidget::evaluate(const char* function)
 {
-    webkit_web_view_evaluate_javascript(&get(), function, -1, nullptr, nullptr, nullptr,
-        web_view_run_javascript_finished, nullptr);
+    webkit_web_view_evaluate_javascript(&get(), function, -1, nullptr, nullptr,
+        nullptr, web_view_javascript_finished, nullptr);
 }
 
 void WebWidget::pop_load()
 {
-    dispatch_lock_.lock();
-    auto dispatch_info = dispatch_queue_.front();
-    dispatch_queue_.pop();
-    dispatch_lock_.unlock();
+    LoadWebViewDispatch dispatch_info;
+    {
+        std::lock_guard<std::mutex> guard{dispatch_lock_};
+        if (dispatch_queue_.empty())
+            return;
+        dispatch_info = std::move(dispatch_queue_.back());
+        while (!dispatch_queue_.empty())
+            dispatch_queue_.pop();
+    }
     on_load(dispatch_info.sender, dispatch_info.html);
 }
 
-void WebWidget::on_load(const std::int32_t sender, const char* html)
+void WebWidget::on_load(const std::int32_t sender, const std::string& html)
 {
-    Window::window_->sender_ = sender;
-    g_signal_connect(&get(), "load-changed", GCallback(web_view_load_changed),
-        reinterpret_cast<void*>(sender));
-    std::string path = "file://" + (Window::window_->assets_path_ / "assets" /
-        (std::string(html) + ".htm")).string();
-    webkit_web_view_load_uri(&get(), path.c_str());
+    if (sender <= 0 || sender != cross::StageIndex() || html.empty())
+        return;
+    sender_ = sender;
+    committed_ = false;
+    uri_ = "file://" + (Window::window_->assets_path_ / "assets" /
+        (html + ".htm")).string() + "?cross_receiver=" +
+        std::to_string(sender) + "#cross-" + std::to_string(sender);
+    webkit_web_view_load_uri(&get(), uri_.c_str());
 }

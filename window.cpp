@@ -22,7 +22,6 @@ Window* Window::window_;
 
 Window::Window()
     : started_{ false }
-    , sender_{ 0 }
 {
     window_ = this;
     set_title(PROJECT_NAME);
@@ -32,7 +31,6 @@ Window::Window()
     key_controller->signal_key_released().connect(
         sigc::mem_fun(*this, &Window::handle_key));
     add_controller(key_controller);
-    need_restart_.connect(sigc::mem_fun(*this, &Window::on_need_restart));
     post_message_.connect(sigc::mem_fun(*this, &Window::on_post_message));
     set_child(*web_view_.web_widget_);
     property_is_active().signal_changed().connect(
@@ -53,19 +51,14 @@ Window::Window()
             started_ = false;
             cross::Stop();
         }
-        cross::Destroy();
     });
     cross::Begin();
 }
 
 Window::~Window()
 {
+    cross::Destroy();
     cross::End();
-}
-
-void Window::post_restart_message()
-{
-    need_restart_();
 }
 
 void Window::async_message(std::int32_t receiver,
@@ -141,9 +134,4 @@ void Window::on_post_message()
     post_message_lock_.unlock();
     cross::HandleAsync(dispatch_info.sender,
         dispatch_info.id, dispatch_info.command, dispatch_info.info);
-}
-
-void Window::on_need_restart()
-{
-    cross::Restart();
 }

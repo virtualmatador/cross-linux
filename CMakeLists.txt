@@ -41,6 +41,15 @@ target_link_libraries("${CMAKE_PROJECT_NAME}"
     ${GTKMM_LIBRARIES} ${WEBKIT2GTK_LIBRARIES} pthread stdc++fs)
 target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE -no-pie)
 
+add_executable("cross-runtime-test"
+    "extern/core/tests/runtime_test.cpp"
+    "extern/core/src/cross.cpp"
+    "extern/core/src/stage.cpp"
+)
+set_target_properties("cross-runtime-test" PROPERTIES CXX_STANDARD 17)
+target_include_directories("cross-runtime-test" PRIVATE "extern/core/src")
+add_test(NAME "cross-runtime" COMMAND "cross-runtime-test")
+
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_RELEASE "${BUILD_NUMBER}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_VENDOR})

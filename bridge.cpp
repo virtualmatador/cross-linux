@@ -13,11 +13,6 @@
 
 #include "window.h"
 
-void bridge::NeedRestart()
-{
-    Window::window_->post_restart_message();
-}
-
 void bridge::LoadView(const std::int32_t sender, const char* html)
 {
     Window::window_->web_view_.push_load(sender, html);

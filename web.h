@@ -11,13 +11,14 @@
 
 #include <mutex>
 #include <queue>
+#include <string>
 
 #include <webkit/webkit.h>
 
 struct LoadWebViewDispatch
 {
-    const std::int32_t sender;
-    const char* html;
+    std::int32_t sender;
+    std::string html;
 };
 
 class WebWidget : public std::reference_wrapper<WebKitWebView>
@@ -29,7 +30,11 @@ public:
     void evaluate(const char* function);
 
 private:
-    void on_load(const std::int32_t sender, const char* html);
+    static void load_changed(WebKitWebView* web_view,
+        WebKitLoadEvent load_event, gpointer user_data);
+    void on_load(const std::int32_t sender, const std::string& html);
+    void on_load_changed(WebKitWebView* web_view,
+        WebKitLoadEvent load_event);
     void pop_load();
 
 public:
@@ -39,6 +44,9 @@ private:
     std::mutex dispatch_lock_;
     Glib::Dispatcher dispatcher_;
     std::queue<LoadWebViewDispatch> dispatch_queue_;
+    std::int32_t sender_ = 0;
+    std::string uri_;
+    bool committed_ = false;
 };
 
 #endif // DESKTOP_WEB_H

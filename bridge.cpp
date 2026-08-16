@@ -7,11 +7,45 @@
 //
 
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
+#include <memory>
+#include <sstream>
+#include <system_error>
+#include <utility>
 
 #include "extern/core/src/bridge.h"
 
 #include "window.h"
+
+namespace
+{
+constexpr const char* save_name = "SAVE";
+
+std::filesystem::path SavePath()
+{
+    return Window::window_->config_path_ / save_name;
+}
+
+std::filesystem::path TemporarySavePath()
+{
+    auto path = SavePath();
+    path += ".tmp";
+    return path;
+}
+
+void RemoveTemporarySave(const std::filesystem::path& path)
+{
+    std::error_code error;
+    std::filesystem::remove(path, error);
+}
+
+std::shared_ptr<std::istream> RestoreInput()
+{
+    return std::make_shared<std::ifstream>(SavePath(),
+        std::ios::in | std::ios::binary);
+}
+}
 
 void bridge::LoadView(const std::int32_t sender, const char* html)
 {
@@ -35,23 +69,36 @@ void bridge::CallFunction(const char* function)
     Window::window_->web_view_.evaluate(function);
 }
 
-std::string bridge::GetPreference(const char* key)
+void bridge::Restore(application::Completion completion)
 {
-    std::filesystem::path value_path = Window::window_->config_path_ / key;
-    std::ifstream value_stream (value_path.string());
-    std::string value((std::istreambuf_iterator<char>(value_stream)),
-        std::istreambuf_iterator<char>());
-    return value;
+    auto input = RestoreInput();
+    application::Restore(*input,
+        [input, completion = std::move(completion)]() mutable
+        {
+            completion();
+            input.reset();
+        });
 }
 
-void bridge::SetPreference(const char* key, const char* value)
+void bridge::Checkpoint()
 {
-    std::filesystem::path value_path = Window::window_->config_path_ / key;
-    std::ofstream value_stream (value_path.string());
-    if (value_stream)
+    const auto save_path = SavePath();
+    const auto temporary_path = TemporarySavePath();
+    std::ofstream output(temporary_path,
+        std::ios::out | std::ios::binary | std::ios::trunc);
+    application::Checkpoint(output);
+    output.flush();
+    output.close();
+    if (!output)
     {
-        value_stream << value;
+        RemoveTemporarySave(temporary_path);
+        return;
     }
+
+    std::error_code error;
+    std::filesystem::rename(temporary_path, save_path, error);
+    if (error)
+        RemoveTemporarySave(temporary_path);
 }
 
 void bridge::AsyncMessage(std::int32_t receiver,
